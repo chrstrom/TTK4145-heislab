@@ -1,12 +1,13 @@
 package bcast
 
 import (
-	"../conn"
 	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
 	"strings"
+
+	"github.com/TTK4145-Students-2021/project-gruppe80/network-Go-modul/conn"
 )
 
 // Encodes received values from `chans` into type-tagged JSON, then broadcasts

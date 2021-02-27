@@ -3,6 +3,8 @@ package main
 import (
 	"time"
 
+	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
+	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
 	"github.com/TTK4145-Students-2021/project-gruppe80/network"
 )
 
@@ -26,32 +28,37 @@ func main() {
 		requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
 	go node.NetworkNode()
 
+	numFloors := 4
+
+	elevio.Init("localhost:15657", numFloors)
+
+	//var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
+
+	drv_buttons := make(chan elevio.ButtonEvent)
+	//drv_floors := make(chan int)
+	//drv_obstr := make(chan bool)
+	//drv_stop := make(chan bool)
+
+	go elevio.PollButtons(drv_buttons)
+	//go elevio.PollFloorSensor(drv_floors)
+	//go elevio.PollObstructionSwitch(drv_obstr)
+	//go elevio.PollStopButton(drv_stop)
+
+	cabOrderChannel := make(chan int)
+	outsideOrderChannel := make(chan localOrderDelegation.LocalOrder)
+
+	var localORderDelegator localOrderDelegation.LocalOrderDelegator
+	localORderDelegator.Init(drv_buttons, cabOrderChannel, outsideOrderChannel)
+	go localORderDelegator.LocalOrderDelegation()
+
 	o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
 	for {
 		time.Sleep(time.Second * 5)
 		requestToNetwork <- o
 		o.OrderID++
 	}
-
-	/*numFloors := 4
-
-	elevio.Init("localhost:15657", numFloors)
-
-	var d elevio.MotorDirection = elevio.MD_Up
-	//elevio.SetMotorDirection(d)
-
-	drv_buttons := make(chan elevio.ButtonEvent)
-	drv_floors := make(chan int)
-	drv_obstr := make(chan bool)
-	drv_stop := make(chan bool)
-
-
-	go elevio.PollButtons(drv_buttons)
-	go elevio.PollFloorSensor(drv_floors)
-	go elevio.PollObstructionSwitch(drv_obstr)
-	go elevio.PollStopButton(drv_stop)
-
-	for {
+	/*for {
 		select {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)

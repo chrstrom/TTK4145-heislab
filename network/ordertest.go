@@ -1,5 +1,6 @@
 package network
 
+/*
 import (
 	"fmt"
 	"math/rand"
@@ -139,3 +140,4 @@ func makeRandomLocalRequests(localOrderChannel chan<- NewLocalOrder) {
 		time.Sleep(10 * time.Second)
 	}
 }
+*/

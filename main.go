@@ -1,14 +1,39 @@
 package main
 
 import (
-	"fmt"
+	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
+	"github.com/TTK4145-Students-2021/project-gruppe80/network"
 )
 
 func main() {
 
-	numFloors := 4
+	requestToNetwork := make(chan network.NewRequest)
+	delegateOrderToNetwork := make(chan network.Delegation)
+	requestReplyToNetwork := make(chan network.RequestReply)
+	delegationConfirmToNetwork := make(chan network.DelegationConfirm)
+	orderCompleteToNetwork := make(chan network.OrderComplete)
+
+	requestFromNetwork := make(chan network.NewRequest)
+	delegateFromNetwork := make(chan network.Delegation)
+	requestReplyFromNetwork := make(chan network.RequestReply)
+	delegationComfirmFromNetwork := make(chan network.DelegationConfirm)
+	orderCompleteFromNetwork := make(chan network.OrderComplete)
+
+	var node network.Node
+
+	node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
+		requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
+	go node.NetworkNode()
+
+	o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
+	for {
+		time.Sleep(time.Second * 5)
+		requestToNetwork <- o
+		o.OrderID++
+	}
+
+	/*numFloors := 4
 
 	elevio.Init("localhost:15657", numFloors)
 
@@ -19,6 +44,7 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
+
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
@@ -56,5 +82,5 @@ func main() {
 				}
 			}
 		}
-	}
+	}*/
 }

@@ -1,27 +1,31 @@
 package network
 
-type NewRequestMessage struct {
-	SenderID         string
-	MessageID        int
-	Floor, Direction int
+type NewRequest struct {
+	OrderID    int
+	Floor, Dir int
 }
 
-type NewRequestReplyMessage struct {
-	SenderID               string
-	MessageID              int
-	Floor, Direction, Cost int
+type RequestReply struct {
+	ID         string
+	OrderID    int
+	Floor, Dir int
+	Cost       int
 }
 
-type DelegateOrderMessage struct {
-	SenderID         string
-	MessageID        int
-	ReceiverID       string
-	Floor, Direction int
+type Delegation struct {
+	ID         string
+	OrderID    int
+	Floor, Dir int
 }
 
-type DelegateOrderConfirmMessage struct {
-	SenderID         string
-	MessageID        int
-	ReceiverID       string
-	Floor, Direction int
+type DelegationConfirm struct {
+	ID         string
+	OrderID    int
+	Floor, Dir int
+}
+
+type OrderComplete struct {
+	ID         string
+	OrderID    int
+	Floor, Dir int
 }

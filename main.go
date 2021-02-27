@@ -1,14 +1,35 @@
 package main
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
 	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
+	"github.com/TTK4145-Students-2021/project-gruppe80/mock"
 	"github.com/TTK4145-Students-2021/project-gruppe80/network"
+	"github.com/TTK4145-Students-2021/project-gruppe80/orderDelegation"
 )
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	//numFloors := 4
+
+	//elevio.Init("localhost:15657", numFloors)
+
+	//var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
+
+	drv_buttons := make(chan elevio.ButtonEvent)
+	//drv_floors := make(chan int)
+	//drv_obstr := make(chan bool)
+	//drv_stop := make(chan bool)
+
+	//go elevio.PollButtons(drv_buttons)
+	//go elevio.PollFloorSensor(drv_floors)
+	//go elevio.PollObstructionSwitch(drv_obstr)
+	//go elevio.PollStopButton(drv_stop)
 
 	requestToNetwork := make(chan network.NewRequest)
 	delegateOrderToNetwork := make(chan network.Delegation)
@@ -24,39 +45,31 @@ func main() {
 
 	var node network.Node
 
-	node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
+	id := node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
 		requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
 	go node.NetworkNode()
 
-	numFloors := 4
-
-	elevio.Init("localhost:15657", numFloors)
-
-	//var d elevio.MotorDirection = elevio.MD_Up
-	//elevio.SetMotorDirection(d)
-
-	drv_buttons := make(chan elevio.ButtonEvent)
-	//drv_floors := make(chan int)
-	//drv_obstr := make(chan bool)
-	//drv_stop := make(chan bool)
-
-	go elevio.PollButtons(drv_buttons)
-	//go elevio.PollFloorSensor(drv_floors)
-	//go elevio.PollObstructionSwitch(drv_obstr)
-	//go elevio.PollStopButton(drv_stop)
-
 	cabOrderChannel := make(chan int)
-	outsideOrderChannel := make(chan localOrderDelegation.LocalOrder)
+	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 
-	var localORderDelegator localOrderDelegation.LocalOrderDelegator
-	localORderDelegator.Init(drv_buttons, cabOrderChannel, outsideOrderChannel)
-	go localORderDelegator.LocalOrderDelegation()
+	var localOrderDelegator localOrderDelegation.LocalOrderDelegator
+	localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
+	go localOrderDelegator.LocalOrderDelegation()
 
-	o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
+	var orderDelegator orderDelegation.OrderDelegator
+	orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
+	go orderDelegator.OrderDelegation()
+
+	/** 	mock functions for testing 		**/
+	go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)
+	go mock.ReplyToDelegations(delegateFromNetwork, delegationConfirmToNetwork)
+	go mock.SendButtonPresses(drv_buttons, time.Second*10)
+
+	//o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
 	for {
 		time.Sleep(time.Second * 5)
-		requestToNetwork <- o
-		o.OrderID++
+		//requestToNetwork <- o
+		//o.OrderID++
 	}
 	/*for {
 		select {

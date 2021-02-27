@@ -7,19 +7,19 @@ import (
 )
 
 type LocalOrder struct {
-	floor, dir int
+	Floor, Dir int
 }
 
 type LocalOrderDelegator struct {
-	buttonInputChannel  <-chan elevio.ButtonEvent
-	cabOrderChannel     chan<- int
-	outsideOrderChannel chan<- LocalOrder
+	buttonInputChannel <-chan elevio.ButtonEvent
+	cabOrderChannel    chan<- int
+	hallOrderChannel   chan<- LocalOrder
 }
 
-func (delegator *LocalOrderDelegator) Init(buttonCh <-chan elevio.ButtonEvent, cabOrderCh chan<- int, outsideOrderCh chan<- LocalOrder) {
+func (delegator *LocalOrderDelegator) Init(buttonCh <-chan elevio.ButtonEvent, cabOrderCh chan<- int, hallOrderCh chan<- LocalOrder) {
 	delegator.buttonInputChannel = buttonCh
 	delegator.cabOrderChannel = cabOrderCh
-	delegator.outsideOrderChannel = outsideOrderCh
+	delegator.hallOrderChannel = hallOrderCh
 }
 
 func (delegator *LocalOrderDelegator) LocalOrderDelegation() {
@@ -30,9 +30,9 @@ func (delegator *LocalOrderDelegator) LocalOrderDelegation() {
 				//delegator.cabOrderChannel <- buttonEvent.Floor
 				fmt.Println("Send cab order to floor %v", buttonEvent.Floor)
 			} else {
-				//order := LocalOrder{floor: buttonEvent.Floor, dir: int(buttonEvent.Button)}
-				//delegator.outsideOrderChannel <- order
-				fmt.Println("Send order to floor %v with direction %v", buttonEvent.Floor, buttonEvent.Button)
+				order := LocalOrder{Floor: buttonEvent.Floor, Dir: int(buttonEvent.Button)}
+				delegator.hallOrderChannel <- order
+				//fmt.Println("Send order to floor %v with direction %v", buttonEvent.Floor, buttonEvent.Button)
 			}
 		}
 	}

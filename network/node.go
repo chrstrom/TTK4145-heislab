@@ -144,6 +144,9 @@ func (node *Node) NetworkNode() {
 				node.orderCompleteChannelTx <- message
 			}
 
+
+
+
 		case request := <-node.newRequestChannelRx:
 			if shouldThisMessageBeProcessed(node.receivedMessages, request.SenderID, request.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, request.SenderID, request.MessageID)
@@ -151,25 +154,25 @@ func (node *Node) NetworkNode() {
 			}
 
 		case requestReply := <-node.newRequestReplyChannelRx:
-			if shouldThisMessageBeProcessed(node.receivedMessages, requestReply.SenderID, requestReply.MessageID) {
+			if requestReply.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, requestReply.SenderID, requestReply.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, requestReply.SenderID, requestReply.MessageID)
 				fmt.Printf("%#v \n", requestReply)
 			}
 
 		case delegation := <-node.delegateOrderChannelRx:
-			if shouldThisMessageBeProcessed(node.receivedMessages, delegation.SenderID, delegation.MessageID) {
+			if delegation.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, delegation.SenderID, delegation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, delegation.SenderID, delegation.MessageID)
 				fmt.Printf("%#v \n", delegation)
 			}
 
 		case confirmation := <-node.delegateOrderConfirmChannelRx:
-			if shouldThisMessageBeProcessed(node.receivedMessages, confirmation.SenderID, confirmation.MessageID) {
+			if confirmation.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, confirmation.SenderID, confirmation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, confirmation.SenderID, confirmation.MessageID)
 				fmt.Printf("%#v \n", confirmation)
 			}
 
 		case complete := <-node.orderCompleteChannelRx:
-			if shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
+			if complete.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, complete.SenderID, complete.MessageID)
 				fmt.Printf("%#v \n", complete)
 			}

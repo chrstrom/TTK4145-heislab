@@ -44,7 +44,7 @@ const duplicatesOfMessages = 3
 func (node *Node) Init(requestChIn <-chan NewRequest, delegationChIn <-chan Delegation, requestReplyChIn <-chan RequestReply,
 	delegationComfirmChIn <-chan DelegationConfirm, orderCompleteChIn <-chan OrderComplete, requestChOut chan<- NewRequest,
 	delegationChOut chan<- Delegation, requestReplyChOut chan<- RequestReply, delegationComfirmChOut chan<- DelegationConfirm,
-	orderCompleteChOut chan<- OrderComplete) {
+	orderCompleteChOut chan<- OrderComplete) string {
 
 	node.requestLocalChannelIn = requestChIn
 	node.delegateOrderLocalChannelIn = delegationChIn
@@ -99,6 +99,8 @@ func (node *Node) Init(requestChIn <-chan NewRequest, delegationChIn <-chan Dele
 	go bcast.Receiver(25377, node.orderCompleteChannelRx)
 
 	node.receivedMessages = make(map[string][]int)
+
+	return node.id
 }
 
 func (node *Node) NetworkNode() {
@@ -144,11 +146,8 @@ func (node *Node) NetworkNode() {
 				node.orderCompleteChannelTx <- message
 			}
 
-
-
-
 		case request := <-node.newRequestChannelRx:
-			if shouldThisMessageBeProcessed(node.receivedMessages, request.SenderID, request.MessageID) {
+			if request.SenderID != node.id && shouldThisMessageBeProcessed(node.receivedMessages, request.SenderID, request.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, request.SenderID, request.MessageID)
 				fmt.Printf("%#v \n", request)
 			}
@@ -160,19 +159,19 @@ func (node *Node) NetworkNode() {
 			}
 
 		case delegation := <-node.delegateOrderChannelRx:
-			if delegation.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, delegation.SenderID, delegation.MessageID) {
+			if delegation.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, delegation.SenderID, delegation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, delegation.SenderID, delegation.MessageID)
 				fmt.Printf("%#v \n", delegation)
 			}
 
 		case confirmation := <-node.delegateOrderConfirmChannelRx:
-			if confirmation.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, confirmation.SenderID, confirmation.MessageID) {
+			if confirmation.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, confirmation.SenderID, confirmation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, confirmation.SenderID, confirmation.MessageID)
 				fmt.Printf("%#v \n", confirmation)
 			}
 
 		case complete := <-node.orderCompleteChannelRx:
-			if complete.ReceiverID == node.id shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
+			if complete.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, complete.SenderID, complete.MessageID)
 				fmt.Printf("%#v \n", complete)
 			}

@@ -149,25 +149,37 @@ func (node *Node) NetworkNode() {
 		case request := <-node.newRequestChannelRx:
 			if request.SenderID != node.id && shouldThisMessageBeProcessed(node.receivedMessages, request.SenderID, request.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, request.SenderID, request.MessageID)
-				fmt.Printf("%#v \n", request)
+				//fmt.Printf("%#v \n", request)
+
+				message := NewRequest{ID: request.SenderID, OrderID: request.OrderID, Floor: request.Floor, Dir: request.Direction}
+				node.requestLocalChannelOut <- message
 			}
 
 		case requestReply := <-node.newRequestReplyChannelRx:
 			if requestReply.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, requestReply.SenderID, requestReply.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, requestReply.SenderID, requestReply.MessageID)
-				fmt.Printf("%#v \n", requestReply)
+				//fmt.Printf("%#v \n", requestReply)
+
+				message := RequestReply{ID: requestReply.SenderID, OrderID: requestReply.OrderID, Floor: requestReply.Floor, Dir: requestReply.Direction, Cost: requestReply.Cost}
+				node.requestReplyLocalChannelOut <- message
 			}
 
 		case delegation := <-node.delegateOrderChannelRx:
 			if delegation.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, delegation.SenderID, delegation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, delegation.SenderID, delegation.MessageID)
-				fmt.Printf("%#v \n", delegation)
+				//fmt.Printf("%#v \n", delegation)
+
+				message := Delegation{ID: delegation.SenderID, OrderID: delegation.OrderID, Floor: delegation.Floor, Dir: delegation.Direction}
+				node.delegateOrderLocalChannelOut <- message
 			}
 
 		case confirmation := <-node.delegateOrderConfirmChannelRx:
 			if confirmation.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, confirmation.SenderID, confirmation.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, confirmation.SenderID, confirmation.MessageID)
-				fmt.Printf("%#v \n", confirmation)
+				//fmt.Printf("%#v \n", confirmation)
+
+				message := DelegationConfirm{ID: confirmation.SenderID, OrderID: confirmation.OrderID, Floor: confirmation.Floor, Dir: confirmation.Direction}
+				node.delegationComfirmLocalChannelOut <- message
 			}
 
 		case complete := <-node.orderCompleteChannelRx:

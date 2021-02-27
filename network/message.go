@@ -1,6 +1,7 @@
 package network
 
 type NewRequest struct {
+	ID         string
 	OrderID    int
 	Floor, Dir int
 }

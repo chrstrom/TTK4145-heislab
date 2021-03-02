@@ -13,9 +13,7 @@ package fsm
 // In this implementation the output channels are replaced by hardware actions
 // For the actual 
 
-type FSMChannels struct {
-	NewOrder chan ButtonEvent
-}
+
 
 func makeUninitializedElevator() *Elevator {
 	elevator := new(Elevator)
@@ -57,8 +55,8 @@ func onRequestButtonPress(button_msg ButtonEvent) {
 //
 //
 //
-func RunElevatorFSM(atFloor		FloorArrival <-chan,
-					buttonPress ButtonPress  <-chan)
+func RunElevatorFSM(atFloor       FloorArrival <-chan,
+		    buttonPress   ButtonPress  <-chan)
 {
 
 	// Initialize

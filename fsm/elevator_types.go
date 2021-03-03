@@ -1,17 +1,12 @@
 package fsm
 
-type Button int
-const (
-	Cab Button = iota
-	Floor
-)
+import io "../elevio"
 
-type Direction int
-const (
-	Up Direction = iota
-	Down 
-	Stop
-)
+const N_FLOORS = 4
+const N_BUTTONS = 3
+
+const DOOR_OPEN_DURATION = 5
+
 
 type ElevatorState int
 const (
@@ -22,7 +17,7 @@ const (
 
 type Elevator struct {
 	floor int
-	direction Direction
+	direction io.MotorDirection
 	requests [N_FLOORS][N_BUTTONS]int
 	state ElevatorState
 }

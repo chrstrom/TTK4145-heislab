@@ -51,13 +51,13 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 
 	case Idle:
 		if elevator.floor == button_floor {
-			// Set door light
-			// start timer
+			io.SetDoorOpenLamp(true)
+			//timer_start(DOOR_OPEN_DURATION)
 			elevator.state = DoorOpen
 		} else {
 			elevator.requests[button_floor][button_type] = 1
-			// elevator.direction = chooseDirection()
-			// Move in elevator.direction
+			elevator.direction = chooseDirection()
+			io.SetMotorDirection(elevator.direction)
 			elevator.state = Moving
 		}
 	}
@@ -73,15 +73,33 @@ func onFloorArrival(floor int) {
 	switch elevator.state {
 
 	case DoorOpen:
-		// If we should stop
-			// Stop motor
-			// Turn on door light
+		if shouldStop() {
+			io.SetMotorDirection(MD_Stop)
+			io.SetDoorOpenLamp(true)
 			// Clear orders at the current floor
-			// Set lights again
+			// Set all order lights again
 			elevator.state = DoorOpen
+		}	
 	}
 }
 
+func onDoorTimeout() {
+
+	switch elevator.state {
+
+	case DoorOpen:
+		elevator.direction = chooseDirection()
+
+		io.SetDoorOpenLamp(false)
+		io.SetMotorDirection(elevator.direction)
+
+		if elevator.direction == MD_Stop {
+			elevator.state = Idle
+		} else {
+			elevator.state = Moving
+		}
+	}
+}
 
 // This function is the function from the fsm package that will run
 // as a goroutine. Because of this, it should take inputs based on

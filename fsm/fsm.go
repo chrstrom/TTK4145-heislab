@@ -41,17 +41,45 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 
 	case DoorOpen:
 		if elevator.floor == button_floor {
-			fmt.Printf("Opening door!")
 			//timer_start(DOOR_OPEN_DURATION)
 		} else {
 			elevator.requests[button_floor][button_type] = 1
 		}
+	
+	case Moving:
+		elevator.requests[button_floor][button_type] = 1
 
+	case Idle:
+		if elevator.floor == button_floor {
+			// Set door light
+			// start timer
+			elevator.state = DoorOpen
+		} else {
+			elevator.requests[button_floor][button_type] = 1
+			// elevator.direction = chooseDirection()
+			// Move in elevator.direction
+			elevator.state = Moving
+		}
 	}
+
+	// Set all lights
 }
 
 func onFloorArrival(floor int) {
+	elevator.floor = floor
 
+	// Set floor light
+
+	switch elevator.state {
+
+	case DoorOpen:
+		// If we should stop
+			// Stop motor
+			// Turn on door light
+			// Clear orders at the current floor
+			// Set lights again
+			elevator.state = DoorOpen
+	}
 }
 
 

@@ -3,6 +3,7 @@ package fsm
 import (
 	"fmt"
 	io "../elevio"
+	"../timer"
 )
 
 // Orders are received from the elevator server, so it makes
@@ -32,6 +33,9 @@ func makeUninitializedElevator() Elevator {
 	return *elevator
 }
 
+
+
+
 func onRequestButtonPress(button_msg io.ButtonEvent) {
 
 	var button_floor = button_msg.Floor
@@ -41,7 +45,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 
 	case DoorOpen:
 		if elevator.floor == button_floor {
-			//timer_start(DOOR_OPEN_DURATION)
+			//TODO start timer with DOOR_OPEN_DURATION 
 		} else {
 			elevator.requests[button_floor][button_type] = 1
 		}
@@ -52,7 +56,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 	case Idle:
 		if elevator.floor == button_floor {
 			io.SetDoorOpenLamp(true)
-			//timer_start(DOOR_OPEN_DURATION)
+			//TODO start timer with DOOR_OPEN_DURATION 
 			elevator.state = DoorOpen
 		} else {
 			elevator.requests[button_floor][button_type] = 1
@@ -62,7 +66,8 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 		}
 	}
 
-	// Set all lights
+	// TODO
+	setAllLights(elevator);
 }
 
 func onFloorArrival(floor int) {
@@ -73,10 +78,14 @@ func onFloorArrival(floor int) {
 	switch elevator.state {
 
 	case DoorOpen:
+			// TODO
 		if shouldStop() {
 			io.SetMotorDirection(MD_Stop)
 			io.SetDoorOpenLamp(true)
-			// Clear orders at the current floor
+			clearRequestAtCurrentFloor(elevator);
+
+			//TODO start timer with DOOR_OPEN_DURATION 
+			
 			// Set all order lights again
 			elevator.state = DoorOpen
 		}	

@@ -76,4 +76,5 @@ func shouldStop() bool {
 func clearRequestAtFloor() {
 	for button:=0; button < N_BUTTONS; button++ {
 		elevator.requests[elevator.floor][button] = 0
+	}
 }

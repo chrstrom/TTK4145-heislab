@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
-	"github.com/TTK4145-Students-2021/project-gruppe80/timer"
+	"../localOrderDelegation"
+	"../network"
+	"../timer"
 )
 
 type OrderStateType int

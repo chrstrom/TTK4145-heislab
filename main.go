@@ -6,11 +6,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
-	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
-	"github.com/TTK4145-Students-2021/project-gruppe80/mock"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
-	"github.com/TTK4145-Students-2021/project-gruppe80/orderDelegation"
+	"./localOrderDelegation"
+	"./mock"
+	"./network"
+	"./orderDelegation"
 )
 
 func main() {

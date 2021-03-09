@@ -1,23 +1,19 @@
 package main
 
 import (
-	"./elevio"
-	"./fsm"
 	"math/rand"
 	"time"
 
-	"./localOrderDelegation"
-	"./mock"
-	"./network"
-	"./orderDelegation"
+	"./elevio"
+	"./fsm"
 )
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	//numFloors := 4
+	numFloors := 4
 
-	//elevio.Init("localhost:15657", numFloors)
+	elevio.Init("localhost:15657", numFloors)
 
 	//var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
@@ -26,54 +22,59 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
+	timer_ch := make(chan int)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop)
+	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop, timer_ch)
 
-	requestToNetwork := make(chan network.NewRequest)
-	delegateOrderToNetwork := make(chan network.Delegation)
-	requestReplyToNetwork := make(chan network.RequestReply)
-	delegationConfirmToNetwork := make(chan network.DelegationConfirm)
-	orderCompleteToNetwork := make(chan network.OrderComplete)
+	for {
 
-	requestFromNetwork := make(chan network.NewRequest)
-	delegateFromNetwork := make(chan network.Delegation)
-	requestReplyFromNetwork := make(chan network.RequestReply)
-	delegationComfirmFromNetwork := make(chan network.DelegationConfirm)
-	orderCompleteFromNetwork := make(chan network.OrderComplete)
+	}
 
-	var node network.Node
+	// requestToNetwork := make(chan network.NewRequest)
+	// delegateOrderToNetwork := make(chan network.Delegation)
+	// requestReplyToNetwork := make(chan network.RequestReply)
+	// delegationConfirmToNetwork := make(chan network.DelegationConfirm)
+	// orderCompleteToNetwork := make(chan network.OrderComplete)
 
-	id := node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
-		requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
-	go node.NetworkNode()
+	// requestFromNetwork := make(chan network.NewRequest)
+	// delegateFromNetwork := make(chan network.Delegation)
+	// requestReplyFromNetwork := make(chan network.RequestReply)
+	// delegationComfirmFromNetwork := make(chan network.DelegationConfirm)
+	// orderCompleteFromNetwork := make(chan network.OrderComplete)
 
-	cabOrderChannel := make(chan int)
-	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
+	// var node network.Node
 
-	var localOrderDelegator localOrderDelegation.LocalOrderDelegator
-	localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
-	go localOrderDelegator.LocalOrderDelegation()
+	// id := node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
+	// 	requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
+	// go node.NetworkNode()
 
-	var orderDelegator orderDelegation.OrderDelegator
-	orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	go orderDelegator.OrderDelegation()
+	// cabOrderChannel := make(chan int)
+	// hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 
-	/** 	mock functions for testing 		**/
-	go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)
-	go mock.ReplyToDelegations(delegateFromNetwork, delegationConfirmToNetwork)
-	go mock.SendButtonPresses(drv_buttons, time.Second*10)
+	// var localOrderDelegator localOrderDelegation.LocalOrderDelegator
+	// localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
+	// go localOrderDelegator.LocalOrderDelegation()
+
+	// var orderDelegator orderDelegation.OrderDelegator
+	// orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
+	// go orderDelegator.OrderDelegation()
+
+	// /** 	mock functions for testing 		**/
+	// go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)
+	// go mock.ReplyToDelegations(delegateFromNetwork, delegationConfirmToNetwork)
+	// go mock.SendButtonPresses(drv_buttons, time.Second*10)
 
 	//o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
-	for {
-		time.Sleep(time.Second * 5)
-		//requestToNetwork <- o
-		//o.OrderID++
-	}
+	// for {
+	// 	time.Sleep(time.Second * 5)
+	//requestToNetwork <- o
+	//o.OrderID++
+	//}
 	/*for {
 		select {
 		case a := <-drv_buttons:

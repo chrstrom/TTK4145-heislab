@@ -11,15 +11,12 @@ func sendWithDelayFunction(delay time.Duration, ch chan<- int, message int) {
 	ch <- message
 }
 
-func FsmSendWithDelay(delay time.Duration, ch chan<- int, reset *int) {
-	*reset++
-	go fsmSendWithDelayFunction(delay, ch, reset)
+func FsmSendWithDelay(delay time.Duration, ch chan<- int) {
+	go fsmSendWithDelayFunction(delay, ch)
 }
 
-func fsmSendWithDelayFunction(delay time.Duration, ch chan<- int, reset *int) {
+func fsmSendWithDelayFunction(delay time.Duration, ch chan<- int) {
+	ch <- 1
 	<-time.After(delay)
-	*reset--
-	if *reset == 0 {
-		ch <- 1
-	}
+	ch <- -1
 }

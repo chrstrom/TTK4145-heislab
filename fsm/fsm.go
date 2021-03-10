@@ -31,7 +31,7 @@ func makeUninitializedElevator() Elevator {
 	// 2D array of requests is 0 by default
 	elevator.state = Idle
 	elevator.timerChannel = make(chan int)
-	elevator.timerReset = 0
+	elevator.timerResets = 0
 	elevator.obstruction = false
 
 	return *elevator
@@ -193,8 +193,11 @@ func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
 				fmt.Printf("Emergency stop button triggered!")
 			}
 			onEmergencyStop(emergencyStop)
-		case <-elevator.timerChannel:
-			onDoorTimeout()
+		case timer := <-elevator.timerChannel:
+			elevator.timerResets += timer
+			if elevator.timerResets == 0 {
+				onDoorTimeout()
+			}
 
 		}
 
@@ -218,5 +221,5 @@ func setAllLights() {
 func doorOpenTimer() {
 	const doorOpenTime = time.Millisecond * 2000
 	io.SetDoorOpenLamp(true)
-	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel, &elevator.timerReset)
+	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
 }

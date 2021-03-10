@@ -23,6 +23,6 @@ type Elevator struct {
 	requests     [N_FLOORS][N_BUTTONS]bool
 	state        ElevatorState
 	timerChannel chan int
-	timerReset   int
+	timerResets  int
 	obstruction  bool
 }

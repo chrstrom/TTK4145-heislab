@@ -4,11 +4,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
-	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
-	"github.com/TTK4145-Students-2021/project-gruppe80/mock"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
-	"github.com/TTK4145-Students-2021/project-gruppe80/orderDelegation"
+	"./elevio"
+	"./hallOrderManager"
+	"./localOrderDelegation"
+	"./mock"
+	"./network"
 )
 
 func main() {
@@ -56,20 +56,17 @@ func main() {
 	localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
 	go localOrderDelegator.LocalOrderDelegation()
 
-	var orderDelegator orderDelegation.OrderDelegator
-	orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	go orderDelegator.OrderDelegation()
+	var hallOrderManager hallOrderManager.HallOrderManager
+	hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
+	go hallOrderManager.OrderManager()
 
 	/** 	mock functions for testing 		**/
 	go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)
 	go mock.ReplyToDelegations(delegateFromNetwork, delegationConfirmToNetwork)
 	go mock.SendButtonPresses(drv_buttons, time.Second*10)
 
-	//o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
 	for {
 		time.Sleep(time.Second * 5)
-		//requestToNetwork <- o
-		//o.OrderID++
 	}
 	/*for {
 		select {

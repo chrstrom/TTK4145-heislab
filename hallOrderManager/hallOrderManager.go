@@ -1,13 +1,13 @@
-package orderDelegation
+package hallOrderManager
 
 import (
 	"fmt"
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
-	"github.com/TTK4145-Students-2021/project-gruppe80/timer"
+	"../localOrderDelegation"
+	"../network"
+	"../timer"
 )
 
 type OrderStateType int
@@ -27,7 +27,7 @@ type Order struct {
 	DelegatedToID string
 }
 
-type OrderDelegator struct {
+type HallOrderManager struct {
 	id string
 
 	orders         map[int]Order
@@ -45,89 +45,93 @@ type OrderDelegator struct {
 	orderDelegationTimeoutChannel chan int
 }
 
-func (delegator *OrderDelegator) Init(id string, localRequestCh <-chan localOrderDelegation.LocalOrder, requestToNetCh chan<- network.NewRequest,
+func (manager *HallOrderManager) Init(id string, localRequestCh <-chan localOrderDelegation.LocalOrder, requestToNetCh chan<- network.NewRequest,
 	delegateToNetCh chan<- network.Delegation, requestReplyFromNetCh <-chan network.RequestReply, orderDelegationConfirmFromNetCh <-chan network.DelegationConfirm) {
-	delegator.id = id
+	manager.id = id
 
-	delegator.orders = make(map[int]Order)
-	delegator.orderIDCounter = 1
+	manager.orders = make(map[int]Order)
+	manager.orderIDCounter = 1
 
-	delegator.localRequestChannel = localRequestCh
-	delegator.requestToNetwork = requestToNetCh
-	delegator.delegateToNetwork = delegateToNetCh
-	delegator.requestReplyFromNetwork = requestReplyFromNetCh
-	delegator.orderDelegationConfirmFromNetwork = orderDelegationConfirmFromNetCh
+	manager.localRequestChannel = localRequestCh
+	manager.requestToNetwork = requestToNetCh
+	manager.delegateToNetwork = delegateToNetCh
+	manager.requestReplyFromNetwork = requestReplyFromNetCh
+	manager.orderDelegationConfirmFromNetwork = orderDelegationConfirmFromNetCh
 
-	delegator.orderReplyTimeoutChannel = make(chan int)
-	delegator.orderDelegationTimeoutChannel = make(chan int)
+	manager.orderReplyTimeoutChannel = make(chan int)
+	manager.orderDelegationTimeoutChannel = make(chan int)
 }
 
-func (delegator *OrderDelegator) OrderDelegation() {
+func (manager *HallOrderManager) OrderManager() {
 	for {
 		select {
-		case request := <-delegator.localRequestChannel:
-			//Check if order already exits? Or is this better to do in localOrderDelegator? Or allow duplicates
+		case request := <-manager.localRequestChannel:
+			//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
 			order := Order{State: Received, Floor: request.Floor, Dir: request.Dir}
 			order.costs = make(map[string]int)
 			//get local elevator cost in some way
-			order.costs[delegator.id] = rand.Intn(1000)
+			order.costs[manager.id] = rand.Intn(1000)
 
-			orderID := delegator.orderIDCounter
-			delegator.orderIDCounter++
-			delegator.orders[orderID] = order
+			orderID := manager.orderIDCounter
+			manager.orderIDCounter++
+			manager.orders[orderID] = order
 			fmt.Printf("%v - local request received \n", orderID)
 
-			timer.SendWithDelay(orderReplyTime, delegator.orderReplyTimeoutChannel, orderID)
+			timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, orderID)
 
 			orderToNet := network.NewRequest{OrderID: orderID, Floor: order.Floor, Dir: order.Dir}
-			delegator.requestToNetwork <- orderToNet
+			manager.requestToNetwork <- orderToNet
 
-		case reply := <-delegator.requestReplyFromNetwork:
-			if isValidOrder(delegator.orders, reply.OrderID, reply.Floor, reply.Dir) {
-				delegator.orders[reply.OrderID].costs[reply.ID] = reply.Cost
+		case reply := <-manager.requestReplyFromNetwork:
+			if manager.orders[reply.OrderID].State == Received && isValidOrder(manager.orders, reply.OrderID, reply.Floor, reply.Dir) {
+				manager.orders[reply.OrderID].costs[reply.ID] = reply.Cost
 			}
 
-		case confirm := <-delegator.orderDelegationConfirmFromNetwork:
-			if isValidOrderConfirm(delegator.orders, confirm.OrderID, confirm.Floor, confirm.Dir, confirm.ID) && delegator.orders[confirm.OrderID].State == Delegate {
-				o := delegator.orders[confirm.OrderID]
+		case confirm := <-manager.orderDelegationConfirmFromNetwork:
+			if manager.orders[confirm.OrderID].State == Delegate && isValidOrderConfirm(manager.orders, confirm.OrderID, confirm.Floor, confirm.Dir, confirm.ID) {
+				o := manager.orders[confirm.OrderID]
 				o.State = Serving
 				fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
 				// Send to Order Storage
-				delegator.orders[confirm.OrderID] = o
+				manager.orders[confirm.OrderID] = o
 			}
 
-		case orderID := <-delegator.orderReplyTimeoutChannel:
-			if isValidOrderID(delegator.orders, orderID) && delegator.orders[orderID].State == Received {
-				o := delegator.orders[orderID]
+		case orderID := <-manager.orderReplyTimeoutChannel:
+			if manager.orders[orderID].State == Received && isValidOrderID(manager.orders, orderID) {
+				o := manager.orders[orderID]
 				id := getIDOfLowestCost(o.costs)
 				if id == "" {
-					id = delegator.id
+					id = manager.id
 				}
 				o.DelegatedToID = id
-				o.State = Delegate
-				delegator.orders[orderID] = o
 
-				if id == delegator.id {
+				if id == manager.id {
 					//send order to local elevator
 					fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(o.costs))
+
+					o.State = Serving
 				} else {
 					fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(o.costs))
-					timer.SendWithDelay(orderDelegationTime, delegator.orderDelegationTimeoutChannel, orderID)
+					timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
+
+					o.State = Delegate
+
 					message := network.Delegation{ID: o.DelegatedToID, OrderID: orderID, Floor: o.Floor, Dir: o.Dir}
-					delegator.delegateToNetwork <- message
+					manager.delegateToNetwork <- message
 				}
+				manager.orders[orderID] = o
 			}
 
-		case orderID := <-delegator.orderDelegationTimeoutChannel:
-			if isValidOrderID(delegator.orders, orderID) && delegator.orders[orderID].State == Delegate {
+		case orderID := <-manager.orderDelegationTimeoutChannel:
+			if manager.orders[orderID].State == Delegate && isValidOrderID(manager.orders, orderID) {
 				//Send order to local elevator
-				o := delegator.orders[orderID]
-				o.DelegatedToID = delegator.id
+				o := manager.orders[orderID]
+				o.DelegatedToID = manager.id
 				o.State = Serving
 
 				fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
 				// Send to Order Storage
-				delegator.orders[orderID] = o
+				manager.orders[orderID] = o
 			}
 		}
 	}

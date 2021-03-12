@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
+	"../elevio"
+	"../network"
 )
 
 func ReplyToRequests(request <-chan network.NewRequest, reply chan<- network.RequestReply) {

@@ -74,7 +74,6 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 		}
 	}
 
-	// TODO
 	setAllLights()
 }
 
@@ -82,16 +81,16 @@ func onFloorArrival(floor int) {
 	elevator.floor = floor
 
 	// Set floor light
+	io.SetFloorIndicator(floor)
 
 	switch elevator.state {
 
 	case Moving:
-		// TODO
+
 		if shouldStop() {
 			io.SetMotorDirection(io.MD_Stop)
 			clearRequestAtFloor()
 
-			//TODO start timer with DOOR_OPEN_DURATION
 			doorOpenTimer()
 
 			// Set all order lights again
@@ -104,7 +103,6 @@ func onFloorArrival(floor int) {
 
 func onDoorTimeout() {
 	if elevator.state == DoorOpen && !elevator.obstruction {
-		//fmt.Printf("OnDoortimeout\n")
 		io.SetDoorOpenLamp(false)
 		elevator.direction = chooseDirection()
 		io.SetMotorDirection(elevator.direction)
@@ -125,18 +123,33 @@ func onObstruction(obstruction bool) {
 	onDoorTimeout()
 }
 
-func onEmergencyStop(stop bool) {
-	if stop {
-		io.SetStopLamp(true)
-		io.SetMotorDirection(io.MD_Stop)
-		clearAllRequest()
-		setAllLights()
-	} else {
-		io.SetStopLamp(false)
-		if elevator.state == Moving {
-			elevator.floor = -1
-		}
+/*func setAllLights() {
+	for f := 0; f < N_FLOORS; f++ {
+		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
+			if elevator.requests[f][b] {
+				io.SetButtonLamp(b, f, true)
+			} else {
+				io.SetButtonLamp(b, f, false)
+			}
 
+		}
+	}
+
+}*/
+
+func doorOpenTimer() {
+	const doorOpenTime = time.Millisecond * 2000
+	io.SetDoorOpenLamp(true)
+	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
+}
+
+func lookForRequests() {
+	for f := 0; f < N_FLOORS; f++ {
+		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
+			if elevator.requests[f][b] && elevator.state == Idle {
+				onRequestButtonPress(io.ButtonEvent{Floor: f, Button: io.ButtonType(b)})
+			}
+		}
 	}
 }
 
@@ -156,15 +169,7 @@ func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
 		if elevator.floor == -1 {
 			onInitBetweenFloors()
 		}
-
-		for f := 0; f < N_FLOORS; f++ {
-			for b := io.ButtonType(0); b < N_BUTTONS; b++ {
-				if elevator.requests[f][b] && elevator.state == Idle {
-					fmt.Printf("Looking through requests\n")
-					onRequestButtonPress(io.ButtonEvent{Floor: f, Button: io.ButtonType(b)})
-				}
-			}
-		}
+		lookForRequests()
 		// Dooropen=0, Moving=1, Idle=2
 		fmt.Printf("State:%+v\n", elevator.state)
 
@@ -188,11 +193,12 @@ func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
 			}
 			onObstruction(elevator.obstruction)
 
-		case emergencyStop := <-event_stopButton:
-			if emergencyStop {
-				fmt.Printf("Emergency stop button triggered!")
-			}
-			onEmergencyStop(emergencyStop)
+		/*case emergencyStop := <-event_stopButton:
+		if emergencyStop {
+			fmt.Printf("Emergency stop button triggered!")
+		}
+		//onEmergencyStop(emergencyStop)*/
+
 		case timer := <-elevator.timerChannel:
 			elevator.timerResets += timer
 			if elevator.timerResets == 0 {
@@ -202,24 +208,4 @@ func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
 		}
 
 	}
-}
-
-func setAllLights() {
-	for f := 0; f < N_FLOORS; f++ {
-		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
-			if elevator.requests[f][b] {
-				io.SetButtonLamp(b, f, true)
-			} else {
-				io.SetButtonLamp(b, f, false)
-			}
-
-		}
-	}
-
-}
-
-func doorOpenTimer() {
-	const doorOpenTime = time.Millisecond * 2000
-	io.SetDoorOpenLamp(true)
-	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
 }

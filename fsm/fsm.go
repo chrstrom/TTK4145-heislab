@@ -123,7 +123,7 @@ func onObstruction(obstruction bool) {
 	onDoorTimeout()
 }
 
-/*func setAllLights() {
+func setAllLights() {
 	for f := 0; f < N_FLOORS; f++ {
 		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
 			if elevator.requests[f][b] {
@@ -135,22 +135,12 @@ func onObstruction(obstruction bool) {
 		}
 	}
 
-}*/
+}
 
 func doorOpenTimer() {
 	const doorOpenTime = time.Millisecond * 2000
 	io.SetDoorOpenLamp(true)
 	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
-}
-
-func lookForRequests() {
-	for f := 0; f < N_FLOORS; f++ {
-		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
-			if elevator.requests[f][b] && elevator.state == Idle {
-				onRequestButtonPress(io.ButtonEvent{Floor: f, Button: io.ButtonType(b)})
-			}
-		}
-	}
 }
 
 // This function is the function from the fsm package that will run
@@ -163,13 +153,11 @@ func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
 	event_timer <-chan int) {
 
 	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
+	if elevator.floor == -1 {
+		onInitBetweenFloors()
+	}
 
 	for {
-
-		if elevator.floor == -1 {
-			onInitBetweenFloors()
-		}
-		lookForRequests()
 		// Dooropen=0, Moving=1, Idle=2
 		fmt.Printf("State:%+v\n", elevator.state)
 

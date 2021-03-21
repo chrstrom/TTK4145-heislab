@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/cabOrderStorage"
 	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
 	"github.com/TTK4145-Students-2021/project-gruppe80/localOrderDelegation"
 	"github.com/TTK4145-Students-2021/project-gruppe80/mock"
@@ -14,12 +12,6 @@ import (
 )
 
 func main() {
-	o := [4]bool{true, false, false, false}
-	//cabOrderStorage.StoreCabOrders(o)
-	fmt.Println(cabOrderStorage.LoadCabOrders())
-	cabOrderStorage.StoreCabOrders(o)
-	time.Sleep(5 * time.Second)
-	return
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

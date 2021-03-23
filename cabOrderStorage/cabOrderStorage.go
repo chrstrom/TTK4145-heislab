@@ -9,7 +9,7 @@ import (
 
 const numFloors = 4 //use istead a global variable for number of floors
 const fileDuplicates = 3
-const backupPath = "cabOrderStorage/orderBackup/"
+const backupPath = "orderBackup/"
 
 func StoreCabOrders(orders [numFloors]bool) {
 	orderString := ""

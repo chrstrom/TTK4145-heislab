@@ -5,9 +5,9 @@ import (
 	"os"
 	"sort"
 
-	"./bcast"
-	"./localip"
-	"./peers"
+	"../network-go/bcast"
+	"../network-go/localip"
+	"../network-go/peers"
 )
 
 type Node struct {

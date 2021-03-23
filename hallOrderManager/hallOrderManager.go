@@ -3,66 +3,43 @@ package hallOrderManager
 import (
 	"fmt"
 	"math/rand"
-	"time"
 
 	"../localOrderDelegation"
 	"../network"
 	"../timer"
 )
 
-type OrderStateType int
+func initializeManager(
+	id string,
+	localRequestCh <-chan localOrderDelegation.LocalOrder,
+	channels network.NetworkChannels) HallOrderManager {
 
-const (
-	Received OrderStateType = iota
-	Delegate
-	Serving
-)
-const orderReplyTime = time.Millisecond * 50
-const orderDelegationTime = time.Millisecond * 50
+	var manager HallOrderManager
 
-type Order struct {
-	State         OrderStateType
-	Floor, Dir    int
-	costs         map[string]int
-	DelegatedToID string
-}
-
-type HallOrderManager struct {
-	id string
-
-	orders         map[int]Order
-	orderIDCounter int
-
-	localRequestChannel <-chan localOrderDelegation.LocalOrder
-
-	requestToNetwork  chan<- network.NewRequest
-	delegateToNetwork chan<- network.Delegation
-
-	requestReplyFromNetwork           <-chan network.RequestReply
-	orderDelegationConfirmFromNetwork <-chan network.DelegationConfirm
-
-	orderReplyTimeoutChannel      chan int
-	orderDelegationTimeoutChannel chan int
-}
-
-func (manager *HallOrderManager) Init(id string, localRequestCh <-chan localOrderDelegation.LocalOrder, requestToNetCh chan<- network.NewRequest,
-	delegateToNetCh chan<- network.Delegation, requestReplyFromNetCh <-chan network.RequestReply, orderDelegationConfirmFromNetCh <-chan network.DelegationConfirm) {
 	manager.id = id
 
 	manager.orders = make(map[int]Order)
 	manager.orderIDCounter = 1
 
 	manager.localRequestChannel = localRequestCh
-	manager.requestToNetwork = requestToNetCh
-	manager.delegateToNetwork = delegateToNetCh
-	manager.requestReplyFromNetwork = requestReplyFromNetCh
-	manager.orderDelegationConfirmFromNetwork = orderDelegationConfirmFromNetCh
+	manager.requestToNetwork = channels.RequestToNetwork
+	manager.delegateToNetwork = channels.DelegateOrderToNetwork
+	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
+	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
+
+	return manager
 }
 
-func (manager *HallOrderManager) OrderManager() {
+func OrderManager(
+	id string,
+	localRequestCh <-chan localOrderDelegation.LocalOrder,
+	channels network.NetworkChannels) {
+
+	manager := initializeManager(id, localRequestCh, channels)
+
 	for {
 		select {
 		case request := <-manager.localRequestChannel:

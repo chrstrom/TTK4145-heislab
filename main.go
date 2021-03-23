@@ -5,10 +5,6 @@ import (
 	"time"
 
 	"./elevio"
-	"./hallOrderManager"
-	"./localOrderDelegation"
-	"./mock"
-	"./network"
 	"./fsm"
 )
 
@@ -63,10 +59,6 @@ func main() {
 	//var hallOrderManager hallOrderManager.HallOrderManager
 	//hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
 	//go hallOrderManager.OrderManager()
-
-	// var orderDelegator orderDelegation.OrderDelegator
-	// orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	// go orderDelegator.OrderDelegation()
 
 	// /** 	mock functions for testing 		**/
 	// go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)

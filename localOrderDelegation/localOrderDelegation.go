@@ -3,7 +3,7 @@ package localOrderDelegation
 import (
 	"fmt"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/elevio"
+	"../elevio"
 )
 
 type LocalOrder struct {

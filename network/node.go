@@ -5,9 +5,9 @@ import (
 	"os"
 	"sort"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/network-Go-modul/bcast"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network-Go-modul/localip"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network-Go-modul/peers"
+	"../network-go/bcast"
+	"../network-go/localip"
+	"../network-go/peers"
 )
 
 type Node struct {
@@ -186,6 +186,8 @@ func (node *Node) NetworkNode() {
 			if complete.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, complete.SenderID, complete.MessageID)
 				fmt.Printf("%#v \n", complete)
+
+				// Send message on channel
 			}
 
 		}

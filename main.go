@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	numFloors := 4

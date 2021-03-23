@@ -186,6 +186,8 @@ func (node *Node) NetworkNode() {
 			if complete.ReceiverID == node.id && shouldThisMessageBeProcessed(node.receivedMessages, complete.SenderID, complete.MessageID) {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, complete.SenderID, complete.MessageID)
 				fmt.Printf("%#v \n", complete)
+
+				// Send message on channel
 			}
 
 		}

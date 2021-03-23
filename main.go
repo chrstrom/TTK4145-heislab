@@ -56,13 +56,9 @@ func main() {
 	// cabOrderChannel := make(chan int)
 	// hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 
-	// var localOrderDelegator localOrderDelegation.LocalOrderDelegator
-	// localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
-	// go localOrderDelegator.LocalOrderDelegation()
-
-	// var orderDelegator orderDelegation.OrderDelegator
-	// orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	// go orderDelegator.OrderDelegation()
+	//var hallOrderManager hallOrderManager.HallOrderManager
+	//hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
+	//go hallOrderManager.OrderManager()
 
 	// /** 	mock functions for testing 		**/
 	// go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)

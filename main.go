@@ -4,8 +4,12 @@ import (
 	"math/rand"
 	"time"
 
-	"./elevio"
+	io "./elevio"
 	"./fsm"
+	"./hallOrderManager"
+	"./localOrderDelegation"
+	"./network"
+	"github.com/TTK4145-Students-2021/project-gruppe80/network"
 )
 
 func main() {
@@ -13,53 +17,37 @@ func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	numFloors := 4
+	io.Init("localhost:15657", numFloors)
 
-	elevio.Init("localhost:15657", numFloors)
-
-	//var d elevio.MotorDirection = elevio.MD_Up
-	//elevio.SetMotorDirection(d)
-
-	drv_buttons := make(chan elevio.ButtonEvent)
+	// IO Channels //
+	drv_buttons := make(chan io.ButtonEvent)
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
 	timer_ch := make(chan int)
 
-	go elevio.PollButtons(drv_buttons)
-	go elevio.PollFloorSensor(drv_floors)
-	go elevio.PollObstructionSwitch(drv_obstr)
-	go elevio.PollStopButton(drv_stop)
+	// Order Manager Channels //
+	networkChannels := network.CreateNetworkChannelStruct()
+	localRequestChannel := make(<-chan localOrderDelegation.LocalOrder)
+	//cabOrderChannel  := make(chan int)
+	//hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 
+	// IO //
+	go io.PollButtons(drv_buttons)
+	go io.PollFloorSensor(drv_floors)
+	go io.PollObstructionSwitch(drv_obstr)
+	go io.PollStopButton(drv_stop)
+
+	// Network //
+	id := network.GetNodeID()
+	go network.NetworkNode(id, networkChannels)
+
+	// Elevator //
+	go hallOrderManager.OrderManager(id, localRequestChannel, networkChannels)
 	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop, timer_ch)
 
 	for {
-
 	}
-
-	// requestToNetwork := make(chan network.NewRequest)
-	// delegateOrderToNetwork := make(chan network.Delegation)
-	// requestReplyToNetwork := make(chan network.RequestReply)
-	// delegationConfirmToNetwork := make(chan network.DelegationConfirm)
-	// orderCompleteToNetwork := make(chan network.OrderComplete)
-
-	// requestFromNetwork := make(chan network.NewRequest)
-	// delegateFromNetwork := make(chan network.Delegation)
-	// requestReplyFromNetwork := make(chan network.RequestReply)
-	// delegationComfirmFromNetwork := make(chan network.DelegationConfirm)
-	// orderCompleteFromNetwork := make(chan network.OrderComplete)
-
-	// var node network.Node
-
-	// id := node.Init(requestToNetwork, delegateOrderToNetwork, requestReplyToNetwork, delegationConfirmToNetwork, orderCompleteToNetwork,
-	// 	requestFromNetwork, delegateFromNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork, orderCompleteFromNetwork)
-	// go node.NetworkNode()
-
-	// cabOrderChannel := make(chan int)
-	// hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-
-	//var hallOrderManager hallOrderManager.HallOrderManager
-	//hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	//go hallOrderManager.OrderManager()
 
 	// /** 	mock functions for testing 		**/
 	// go mock.ReplyToRequests(requestFromNetwork, requestReplyToNetwork)
@@ -72,36 +60,4 @@ func main() {
 	//requestToNetwork <- o
 	//o.OrderID++
 	//}
-	/*for {
-		select {
-		case a := <-drv_buttons:
-			fmt.Printf("%+v\n", a)
-			elevio.SetButtonLamp(a.Button, a.Floor, true)
-
-		case a := <-drv_floors:
-			fmt.Printf("%+v\n", a)
-			if a == numFloors-1 {
-				d = elevio.MD_Down
-			} else if a == 0 {
-				d = elevio.MD_Up
-			}
-			elevio.SetMotorDirection(d)
-
-		case a := <-drv_obstr:
-			fmt.Printf("%+v\n", a)
-			if a {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			} else {
-				elevio.SetMotorDirection(d)
-			}
-
-		case a := <-drv_stop:
-			fmt.Printf("%+v\n", a)
-			for f := 0; f < numFloors; f++ {
-				for b := elevio.ButtonType(0); b < 3; b++ {
-					elevio.SetButtonLamp(b, f, false)
-				}
-			}
-		}
-	}*/
 }

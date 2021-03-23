@@ -60,15 +60,9 @@ func main() {
 	// cabOrderChannel := make(chan int)
 	// hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 
-<<<<<<< HEAD
-	var hallOrderManager hallOrderManager.HallOrderManager
-	hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
-	go hallOrderManager.OrderManager()
-=======
-	// var localOrderDelegator localOrderDelegation.LocalOrderDelegator
-	// localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
-	// go localOrderDelegator.LocalOrderDelegation()
->>>>>>> master
+	//var hallOrderManager hallOrderManager.HallOrderManager
+	//hallOrderManager.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
+	//go hallOrderManager.OrderManager()
 
 	// var orderDelegator orderDelegation.OrderDelegator
 	// orderDelegator.Init(id, hallOrderChannel, requestToNetwork, delegateOrderToNetwork, requestReplyFromNetwork, delegationComfirmFromNetwork)
@@ -79,18 +73,12 @@ func main() {
 	// go mock.ReplyToDelegations(delegateFromNetwork, delegationConfirmToNetwork)
 	// go mock.SendButtonPresses(drv_buttons, time.Second*10)
 
-<<<<<<< HEAD
-	for {
-		time.Sleep(time.Second * 5)
-	}
-=======
 	//o := network.NewRequest{OrderID: 1, Floor: 1, Dir: 0}
 	// for {
 	// 	time.Sleep(time.Second * 5)
 	//requestToNetwork <- o
 	//o.OrderID++
 	//}
->>>>>>> master
 	/*for {
 		select {
 		case a := <-drv_buttons:

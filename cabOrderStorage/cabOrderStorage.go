@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/TTK4145-Students-2021/project-gruppe80/utility"
 )
 
 const numFloors = 4 //use istead a global variable for number of floors
@@ -33,7 +35,7 @@ func LoadCabOrders() [numFloors]bool {
 	if allFilesEqual {
 		ordersString = fileData[0]
 	} else {
-		e, count := findMostCommonElement(fileData)
+		e, count := utility.FindMostCommonElement(fileData[:])
 		equalFilesRequired := int(math.Ceil(fileDuplicates / 2.0))
 
 		if count >= equalFilesRequired {
@@ -42,7 +44,7 @@ func LoadCabOrders() [numFloors]bool {
 	}
 
 	split := strings.Split(ordersString, " ")
-	o := stringArray2BoolArray(split)
+	o := utility.StringArray2BoolArray(split)
 	if len(split) == numFloors && len(o) == numFloors {
 		copy(orders[:], o)
 	}
@@ -51,6 +53,7 @@ func LoadCabOrders() [numFloors]bool {
 }
 
 func readBackupFiles() (fileData [fileDuplicates]string, allFilesSame bool) {
+	allFilesSame = true
 	for i := 0; i < fileDuplicates; i++ {
 		filename := backupPath + "hallorders" + strconv.Itoa(i) + ".txt"
 		r, _ := ioutil.ReadFile(filename)
@@ -61,29 +64,4 @@ func readBackupFiles() (fileData [fileDuplicates]string, allFilesSame bool) {
 		}
 	}
 	return fileData, allFilesSame
-}
-
-func stringArray2BoolArray(s []string) []bool {
-	var b []bool
-	for _, v := range s {
-		bb, err := strconv.ParseBool(v)
-		if err == nil {
-			b = append(b, bb)
-		}
-	}
-	return b
-}
-
-func findMostCommonElement(s [fileDuplicates]string) (element string, count int) {
-	countMap := make(map[string]int)
-	for _, v := range s {
-		countMap[v]++
-
-		if countMap[v] > count {
-			count = countMap[v]
-			element = v
-		}
-	}
-
-	return element, count
 }

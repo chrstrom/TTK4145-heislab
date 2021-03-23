@@ -63,13 +63,6 @@ func readBackupFiles() (fileData [fileDuplicates]string, allFilesSame bool) {
 	return fileData, allFilesSame
 }
 
-func bool2int(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func stringArray2BoolArray(s []string) []bool {
 	var b []bool
 	for _, v := range s {

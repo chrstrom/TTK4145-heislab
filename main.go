@@ -9,7 +9,6 @@ import (
 	"./hallOrderManager"
 	"./localOrderDelegation"
 	"./network"
-	"github.com/TTK4145-Students-2021/project-gruppe80/network"
 )
 
 func main() {

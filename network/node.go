@@ -10,22 +10,21 @@ import (
 	"../network-go/peers"
 )
 
+func GetNodeID() string {
+	localIP, err := localip.LocalIP()
+	if err != nil {
+		localIP = "DISCONNECTED"
+	}
+	id := fmt.Sprintf("%v-%v", localIP, os.Getpid())
+
+	return id
+}
+
 type Node struct {
 	id               string
 	messageIDCounter int
 
-	// Local channels
-	requestLocalChannelIn           <-chan NewRequest
-	delegateOrderLocalChannelIn     <-chan Delegation
-	requestReplyLocalChannelIn      <-chan RequestReply
-	delegationComfirmLocalChannelIn <-chan DelegationConfirm
-	orderCompleteLocalChannelIn     <-chan OrderComplete
-
-	requestLocalChannelOut           chan<- NewRequest
-	delegateOrderLocalChannelOut     chan<- Delegation
-	requestReplyLocalChannelOut      chan<- RequestReply
-	delegationComfirmLocalChannelOut chan<- DelegationConfirm
-	orderCompleteLocalChannelOut     chan<- OrderComplete
+	networkChannels NetworkChannels
 
 	// Network channels
 	peerUpdateChannel                                            chan peers.PeerUpdate
@@ -41,30 +40,13 @@ type Node struct {
 
 const duplicatesOfMessages = 3
 
-func (node *Node) Init(requestChIn <-chan NewRequest, delegationChIn <-chan Delegation, requestReplyChIn <-chan RequestReply,
-	delegationComfirmChIn <-chan DelegationConfirm, orderCompleteChIn <-chan OrderComplete, requestChOut chan<- NewRequest,
-	delegationChOut chan<- Delegation, requestReplyChOut chan<- RequestReply, delegationComfirmChOut chan<- DelegationConfirm,
-	orderCompleteChOut chan<- OrderComplete) string {
+func initializeNetworkNode(id string, channels NetworkChannels) Node {
 
-	node.requestLocalChannelIn = requestChIn
-	node.delegateOrderLocalChannelIn = delegationChIn
-	node.requestReplyLocalChannelIn = requestReplyChIn
-	node.delegationComfirmLocalChannelIn = delegationComfirmChIn
-	node.orderCompleteLocalChannelIn = orderCompleteChIn
+	var node Node
 
-	node.requestLocalChannelOut = requestChOut
-	node.delegateOrderLocalChannelOut = delegationChOut
-	node.requestReplyLocalChannelOut = requestReplyChOut
-	node.delegationComfirmLocalChannelOut = delegationComfirmChOut
-	node.orderCompleteLocalChannelOut = orderCompleteChOut
+	node.networkChannels = channels
 
-	localIP, err := localip.LocalIP()
-	if err != nil {
-		localIP = "DISCONNECTED"
-	}
-	node.id = fmt.Sprintf("%v-%v", localIP, os.Getpid())
-	fmt.Printf("Init elevator network node with id:%v\n", node.id)
-
+	node.id = id
 	node.messageIDCounter = 1
 
 	node.peerUpdateChannel = make(chan peers.PeerUpdate)
@@ -100,46 +82,89 @@ func (node *Node) Init(requestChIn <-chan NewRequest, delegationChIn <-chan Dele
 
 	node.receivedMessages = make(map[string][]int)
 
-	return node.id
+	return node
 }
 
-func (node *Node) NetworkNode() {
+func NetworkNode(id string, channels NetworkChannels) {
+
+	node := initializeNetworkNode(id, channels)
+
 	for {
 		select {
-		case request := <-node.requestLocalChannelIn:
-			message := NewRequestNetworkMessage{SenderID: node.id, MessageID: node.messageIDCounter, Floor: request.Floor, Direction: request.Dir, OrderID: request.OrderID}
+		case request := <-node.networkChannels.RequestFromNetwork:
+
+			message := NewRequestNetworkMessage{
+				SenderID:  node.id,
+				MessageID: node.messageIDCounter,
+				Floor:     request.Floor,
+				Direction: request.Dir,
+				OrderID:   request.OrderID}
+
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.newRequestChannelTx <- message
 			}
 
-		case reply := <-node.requestReplyLocalChannelIn:
-			message := NewRequestReplyNetworkMessage{SenderID: node.id, MessageID: node.messageIDCounter, ReceiverID: reply.ID, Floor: reply.Floor, Direction: reply.Dir, OrderID: reply.OrderID, Cost: reply.Cost}
+		case reply := <-node.networkChannels.RequestReplyToNetwork:
+
+			message := NewRequestReplyNetworkMessage{
+				SenderID:   node.id,
+				MessageID:  node.messageIDCounter,
+				ReceiverID: reply.ID,
+				Floor:      reply.Floor,
+				Direction:  reply.Dir,
+				OrderID:    reply.OrderID,
+				Cost:       reply.Cost}
+
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.newRequestReplyChannelTx <- message
 			}
 
-		case delegation := <-node.delegateOrderLocalChannelIn:
-			message := DelegateOrderNetworkMessage{SenderID: node.id, MessageID: node.messageIDCounter, ReceiverID: delegation.ID, Floor: delegation.Floor, Direction: delegation.Dir, OrderID: delegation.OrderID}
+		case delegation := <-node.networkChannels.DelegateFromNetwork:
+
+			message := DelegateOrderNetworkMessage{
+				SenderID:   node.id,
+				MessageID:  node.messageIDCounter,
+				ReceiverID: delegation.ID,
+				Floor:      delegation.Floor,
+				Direction:  delegation.Dir,
+				OrderID:    delegation.OrderID}
+
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.delegateOrderChannelTx <- message
 			}
 
-		case confirm := <-node.delegationComfirmLocalChannelIn:
-			message := DelegateOrderConfirmNetworkMessage{SenderID: node.id, MessageID: node.messageIDCounter, ReceiverID: confirm.ID, Floor: confirm.Floor, Direction: confirm.Dir, OrderID: confirm.OrderID}
+		case confirm := <-node.networkChannels.DelegationConfirmToNetwork:
+
+			message := DelegateOrderConfirmNetworkMessage{
+				SenderID:   node.id,
+				MessageID:  node.messageIDCounter,
+				ReceiverID: confirm.ID,
+				Floor:      confirm.Floor,
+				Direction:  confirm.Dir,
+				OrderID:    confirm.OrderID}
+
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.delegateOrderConfirmChannelTx <- message
 			}
 
-		case complete := <-node.orderCompleteLocalChannelIn:
-			message := OrderCompleteNetworkMessage{SenderID: node.id, MessageID: node.messageIDCounter, ReceiverID: complete.ID, Floor: complete.Floor, Direction: complete.Dir, OrderID: complete.OrderID}
+		case complete := <-node.networkChannels.OrderCompleteFromNetwork:
+
+			message := OrderCompleteNetworkMessage{
+				SenderID:   node.id,
+				MessageID:  node.messageIDCounter,
+				ReceiverID: complete.ID,
+				Floor:      complete.Floor,
+				Direction:  complete.Dir,
+				OrderID:    complete.OrderID}
+
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
@@ -151,8 +176,13 @@ func (node *Node) NetworkNode() {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, request.SenderID, request.MessageID)
 				//fmt.Printf("%#v \n", request)
 
-				message := NewRequest{ID: request.SenderID, OrderID: request.OrderID, Floor: request.Floor, Dir: request.Direction}
-				node.requestLocalChannelOut <- message
+				message := NewRequest{
+					ID:      request.SenderID,
+					OrderID: request.OrderID,
+					Floor:   request.Floor,
+					Dir:     request.Direction}
+
+				node.networkChannels.RequestToNetwork <- message
 			}
 
 		case requestReply := <-node.newRequestReplyChannelRx:
@@ -160,8 +190,13 @@ func (node *Node) NetworkNode() {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, requestReply.SenderID, requestReply.MessageID)
 				//fmt.Printf("%#v \n", requestReply)
 
-				message := RequestReply{ID: requestReply.SenderID, OrderID: requestReply.OrderID, Floor: requestReply.Floor, Dir: requestReply.Direction, Cost: requestReply.Cost}
-				node.requestReplyLocalChannelOut <- message
+				message := RequestReply{ID: requestReply.SenderID,
+					OrderID: requestReply.OrderID,
+					Floor:   requestReply.Floor,
+					Dir:     requestReply.Direction,
+					Cost:    requestReply.Cost}
+
+				node.networkChannels.RequestReplyFromNetwork <- message
 			}
 
 		case delegation := <-node.delegateOrderChannelRx:
@@ -169,8 +204,12 @@ func (node *Node) NetworkNode() {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, delegation.SenderID, delegation.MessageID)
 				//fmt.Printf("%#v \n", delegation)
 
-				message := Delegation{ID: delegation.SenderID, OrderID: delegation.OrderID, Floor: delegation.Floor, Dir: delegation.Direction}
-				node.delegateOrderLocalChannelOut <- message
+				message := Delegation{ID: delegation.SenderID,
+					OrderID: delegation.OrderID,
+					Floor:   delegation.Floor,
+					Dir:     delegation.Direction}
+
+				node.networkChannels.DelegateOrderToNetwork <- message
 			}
 
 		case confirmation := <-node.delegateOrderConfirmChannelRx:
@@ -178,8 +217,12 @@ func (node *Node) NetworkNode() {
 				addMessageIDToReceivedMessageMap(node.receivedMessages, confirmation.SenderID, confirmation.MessageID)
 				//fmt.Printf("%#v \n", confirmation)
 
-				message := DelegationConfirm{ID: confirmation.SenderID, OrderID: confirmation.OrderID, Floor: confirmation.Floor, Dir: confirmation.Direction}
-				node.delegationComfirmLocalChannelOut <- message
+				message := DelegationConfirm{ID: confirmation.SenderID,
+					OrderID: confirmation.OrderID,
+					Floor:   confirmation.Floor,
+					Dir:     confirmation.Direction}
+
+				node.networkChannels.DelegationConfirmFromNetwork <- message
 			}
 
 		case complete := <-node.orderCompleteChannelRx:

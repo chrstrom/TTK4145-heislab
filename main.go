@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	hallOrderManager.TestOrderMap()
+	return
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

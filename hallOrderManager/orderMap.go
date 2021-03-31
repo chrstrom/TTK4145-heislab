@@ -1,7 +1,5 @@
 package hallOrderManager
 
-import "fmt"
-
 type OrderMap map[string]map[int]Order
 
 func (om OrderMap) update(order Order) {
@@ -23,6 +21,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found boo
 	return Order{}, false
 }
 
+/*
 func (om OrderMap) isValidOrder(order Order) bool {
 	_, ok := om[order.OwnerID]
 	if ok {
@@ -32,8 +31,8 @@ func (om OrderMap) isValidOrder(order Order) bool {
 		}
 	}
 	return false
-}
-
+}*/
+/*
 func TestOrderMap() {
 	om := make(OrderMap)
 	o := Order{ID: 123, State: Received, Floor: 2, Dir: 1, OwnerID: "node1"}
@@ -45,4 +44,4 @@ func TestOrderMap() {
 	o3.Floor = 20
 	om.update(o3)
 	fmt.Println(om)
-}
+}*/

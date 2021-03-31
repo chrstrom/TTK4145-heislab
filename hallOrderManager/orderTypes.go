@@ -29,7 +29,7 @@ type Order struct {
 type HallOrderManager struct {
 	id string
 
-	orders         map[int]Order
+	orders         OrderMap
 	orderIDCounter int
 
 	localRequestChannel <-chan localOrderDelegation.LocalOrder

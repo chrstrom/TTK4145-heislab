@@ -91,7 +91,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 
 	for {
 		select {
-		case request := <-node.networkChannels.RequestFromNetwork:
+		case request := <-node.networkChannels.RequestToNetwork:
 
 			message := NewRequestNetworkMessage{
 				SenderID:  node.id,
@@ -123,7 +123,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				node.newRequestReplyChannelTx <- message
 			}
 
-		case delegation := <-node.networkChannels.DelegateFromNetwork:
+		case delegation := <-node.networkChannels.DelegateOrderToNetwork:
 
 			message := DelegateOrderNetworkMessage{
 				SenderID:   node.id,
@@ -155,7 +155,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				node.delegateOrderConfirmChannelTx <- message
 			}
 
-		case complete := <-node.networkChannels.OrderCompleteFromNetwork:
+		case complete := <-node.networkChannels.OrderCompleteToNetwork:
 
 			message := OrderCompleteNetworkMessage{
 				SenderID:   node.id,
@@ -182,7 +182,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					Floor:   request.Floor,
 					Dir:     request.Direction}
 
-				node.networkChannels.RequestToNetwork <- message
+				node.networkChannels.RequestFromNetwork <- message
 			}
 
 		case requestReply := <-node.newRequestReplyChannelRx:
@@ -209,7 +209,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					Floor:   delegation.Floor,
 					Dir:     delegation.Direction}
 
-				node.networkChannels.DelegateOrderToNetwork <- message
+				node.networkChannels.DelegateFromNetwork <- message
 			}
 
 		case confirmation := <-node.delegateOrderConfirmChannelRx:

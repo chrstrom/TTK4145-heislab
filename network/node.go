@@ -5,9 +5,9 @@ import (
 	"os"
 	"sort"
 
-	"../network-go/bcast"
-	"../network-go/localip"
-	"../network-go/peers"
+	"./bcast"
+	"./localip"
+	"./peers"
 )
 
 func GetNodeID() string {

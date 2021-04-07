@@ -1,33 +1,38 @@
 package network
 
 type NetworkChannels struct {
-	RequestToNetwork           chan NewRequest
-	DelegateOrderToNetwork     chan Delegation
-	RequestReplyToNetwork      chan RequestReply
-	DelegationConfirmToNetwork chan DelegationConfirm
-	OrderCompleteToNetwork     chan OrderComplete
+	RequestToNetwork           chan Order
+	DelegateOrderToNetwork     chan Order
+	RequestReplyToNetwork      chan Order
+	DelegationConfirmToNetwork chan Order
+	OrderCompleteToNetwork     chan Order
+	SyncOrderToNetwork		   chan OrderSync
 
-	RequestFromNetwork           chan NewRequest
-	DelegateFromNetwork          chan Delegation
-	RequestReplyFromNetwork      chan RequestReply
-	DelegationConfirmFromNetwork chan DelegationConfirm
-	OrderCompleteFromNetwork     chan OrderComplete
+	RequestFromNetwork           chan Order
+	DelegateFromNetwork          chan Order
+	RequestReplyFromNetwork      chan Order
+	DelegationConfirmFromNetwork chan Order
+	OrderCompleteFromNetwork     chan Order
+	SyncOrderFromNetwork		 chan OrderSync
 }
 
 
 func CreateNetworkChannelStruct() NetworkChannels {
 	var networkChannels NetworkChannels
 
-	networkChannels.RequestToNetwork 				= make(chan NewRequest)
-	networkChannels.DelegateOrderToNetwork 			= make(chan Delegation)
-	networkChannels.RequestReplyToNetwork 			= make(chan RequestReply)
-	networkChannels.DelegationConfirmToNetwork 		= make(chan DelegationConfirm)
-	networkChannels.OrderCompleteToNetwork 			= make(chan OrderComplete)
-	networkChannels.RequestFromNetwork 				= make(chan NewRequest)
-	networkChannels.DelegateFromNetwork 			= make(chan	Delegation)
-	networkChannels.RequestReplyFromNetwork 		= make(chan RequestReply)
-	networkChannels.DelegationConfirmFromNetwork 	= make(chan DelegationConfirm)
-	networkChannels.OrderCompleteFromNetwork 		= make(chan OrderComplete)
+	networkChannels.RequestToNetwork 				= make(chan Order)
+	networkChannels.DelegateOrderToNetwork 			= make(chan Order)
+	networkChannels.RequestReplyToNetwork 			= make(chan Order)
+	networkChannels.DelegationConfirmToNetwork 		= make(chan Order)
+	networkChannels.OrderCompleteToNetwork 			= make(chan Order)
+	networkChannels.SyncOrderToNetwork				= make(chan OrderSync)
+
+	networkChannels.RequestFromNetwork 				= make(chan Order)
+	networkChannels.DelegateFromNetwork 			= make(chan	Order)
+	networkChannels.RequestReplyFromNetwork 		= make(chan Order)
+	networkChannels.DelegationConfirmFromNetwork 	= make(chan Order)
+	networkChannels.OrderCompleteFromNetwork 		= make(chan Order)
+	networkChannels.SyncOrderFromNetwork			= make(chan OrderSync)
 
 	return networkChannels
 }

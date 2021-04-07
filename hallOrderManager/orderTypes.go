@@ -8,7 +8,7 @@ import (
 )
 
 const orderReplyTime = time.Millisecond * 50
-const orderDelegationTime = time.Millisecond * 50
+const orderDelegationTime = time.Millisecond * 500
 
 type HallOrderManager struct {
 	id string

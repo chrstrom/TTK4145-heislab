@@ -92,7 +92,6 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 	order.Costs[manager.id] = rand.Intn(1000)
 
 	manager.orders.update(order)
-	orderStateBroadcast(order, manager)
 
 	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
@@ -115,7 +114,7 @@ func handleConfirmationFromNetwork(confirm msg.OrderStamped, manager *HallOrderM
 	order, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
 	if valid && order.State == msg.Delegate {
 		order.State = msg.Serving
-		fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
+		//fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
 
 		manager.orders.update(order)
 
@@ -161,6 +160,7 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 			fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
 
 			order.State = msg.Serving
+			orderStateBroadcast(order, manager)
 		} else {
 			fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
 			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
@@ -185,9 +185,10 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 		order.DelegatedToID = manager.id
 		order.State = msg.Serving
 
-		fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
+		fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
 
 		manager.orders.update(order)
+		orderStateBroadcast(order, manager)
 	}
 }
 

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	io "./elevio"
-	"./localElevatorFSM"
 	"./hallOrderManager"
+	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
 	"./mock"
 	"./network"
@@ -16,7 +16,7 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	//testOrderManager()
+	testOrderManager()
 
 	numFloors := 4
 	io.Init("localhost:15657", numFloors)

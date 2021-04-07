@@ -73,6 +73,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				Order:      delegation}
 
 			node.messageIDCounter++
+			fmt.Printf("Delegate to network: %#v \n", orderToBeDelegated)
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.delegateOrderChannelTx <- orderToBeDelegated
@@ -87,6 +88,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				Order:      confirm}
 
 			node.messageIDCounter++
+			fmt.Printf("Sending Confirmation %#v \n", confirmationOfDelegation)
 
 			for i := 0; i < duplicatesOfMessages; i++ {
 				node.delegateOrderConfirmChannelTx <- confirmationOfDelegation
@@ -168,7 +170,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					node.receivedMessages,
 					delegation.SenderID,
 					delegation.MessageID)
-				//fmt.Printf("%#v \n", delegation)
+				fmt.Printf("Recieved delegation: %#v \n", delegation)
 
 				message := msg.OrderStamped{
 					ID:      delegation.SenderID,
@@ -189,7 +191,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					node.receivedMessages,
 					confirmation.SenderID,
 					confirmation.MessageID)
-				//fmt.Printf("%#v \n", confirmation)
+				fmt.Printf("Recieved confirmation: %#v \n", confirmation)
 
 				message := msg.OrderStamped{
 					ID:      confirmation.SenderID,
@@ -211,7 +213,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					complete.SenderID,
 					complete.MessageID)
 
-				fmt.Printf("%#v \n", complete)
+				//fmt.Printf("%#v \n", complete)
 
 				// Send message on channel
 			}

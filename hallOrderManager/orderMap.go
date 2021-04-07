@@ -37,6 +37,12 @@ func (om OrderMap) printOrderMap() {
 	cmd.Run()*/
 
 	fmt.Println("********************************OrderMap********************************")
+	/*for _, omap := range om {
+		for _, o := range omap {
+			fmt.Println(o)
+		}
+	}
+	return*/
 	nodeids := make([]string, 0, len(om))
 	var orders [][]int
 	i := 0
@@ -66,7 +72,7 @@ func (om OrderMap) printOrderMap() {
 			case msg.Serving:
 				state = "serving"
 			}
-			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
+			fmt.Printf("%-11v %-12v %-21s %-8v %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
 		}
 		i++
 		fmt.Printf("\n\n")

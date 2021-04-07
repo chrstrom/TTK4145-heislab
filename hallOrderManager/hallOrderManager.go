@@ -22,10 +22,14 @@ func initializeManager(
 	manager.orderIDCounter = 1
 
 	manager.localRequestChannel = localRequestCh
+
 	manager.requestToNetwork = channels.RequestToNetwork
 	manager.delegateToNetwork = channels.DelegateOrderToNetwork
+	manager.orderSyncToNetwork = channels.SyncOrderToNetwork
+
 	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
+	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
@@ -55,7 +59,7 @@ func OrderManager(
 
 			timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
-			orderToNet := network.NewRequest{OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
+			orderToNet := network.Order{OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
 			manager.requestToNetwork <- orderToNet
 
 		case reply := <-manager.requestReplyFromNetwork:
@@ -71,6 +75,17 @@ func OrderManager(
 				fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
 
 				manager.orders.update(o)
+
+				//Let the elevators on the network know that this local elevator has taken an order
+				orderToNet := network.OrderSync{OrderID: o.ID, Floor: o.Floor, Dir: o.Dir}
+				manager.orderSyncToNetwork <- orderToNet
+			}
+
+		case sync := <-manager.orderSyncFromNetwork:
+			if sync.ID != manager.id {
+
+				order := Order{}
+				manager.orders.update(order)
 			}
 
 		case orderID := <-manager.orderReplyTimeoutChannel:
@@ -93,7 +108,7 @@ func OrderManager(
 
 					o.State = Delegate
 
-					message := network.Delegation{ID: o.DelegatedToID, OrderID: orderID, Floor: o.Floor, Dir: o.Dir}
+					message := network.Order{ID: o.DelegatedToID, OrderID: orderID, Floor: o.Floor, Dir: o.Dir}
 					manager.delegateToNetwork <- message
 				}
 				manager.orders.update(o)

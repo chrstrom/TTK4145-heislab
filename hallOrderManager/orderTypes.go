@@ -34,11 +34,13 @@ type HallOrderManager struct {
 
 	localRequestChannel <-chan localOrderDelegation.LocalOrder
 
-	requestToNetwork  chan<- network.NewRequest
-	delegateToNetwork chan<- network.Delegation
+	requestToNetwork  	chan<- network.Order
+	delegateToNetwork 	chan<- network.Order
+	orderSyncToNetwork 	chan<- network.OrderSync
 
-	requestReplyFromNetwork           <-chan network.RequestReply
-	orderDelegationConfirmFromNetwork <-chan network.DelegationConfirm
+	requestReplyFromNetwork           	<-chan network.Order
+	orderDelegationConfirmFromNetwork 	<-chan network.Order
+	orderSyncFromNetwork				<-chan network.OrderSync
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

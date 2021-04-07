@@ -101,6 +101,7 @@ func handleReplyFromNetwork(reply network.OrderStamped, manager HallOrderManager
 		order.costs[reply.ID] = reply.Order.Cost
 	}
 }
+
 func handleConfirmationFromNetwork(confirm network.OrderStamped, manager HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
 	if valid && order.State == Delegate {

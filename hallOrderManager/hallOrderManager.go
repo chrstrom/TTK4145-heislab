@@ -48,13 +48,13 @@ func OrderManager(
 		select {
 		case request := <-manager.localRequestChannel:
 			//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
-			order := Order{
+			order := HallOrder{
 				ID: manager.orderIDCounter,
 				OwnerID: manager.id,
 				State:   Received,
 				Floor: request.Floor,
 				Dir: request.Dir}
-				
+
 			manager.orderIDCounter++
 			order.costs = make(map[string]int)
 			//get local elevator cost in some way
@@ -93,7 +93,7 @@ func OrderManager(
 		case sync := <-manager.orderSyncFromNetwork:
 			if sync.ID != manager.id {
 
-				order := Order{}
+				order := HallOrder{}
 				manager.orders.update(order)
 			}
 

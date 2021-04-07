@@ -17,7 +17,7 @@ const (
 const orderReplyTime = time.Millisecond * 50
 const orderDelegationTime = time.Millisecond * 50
 
-type Order struct {
+type HallOrder struct {
 	ID            int
 	State         OrderStateType
 	Floor, Dir    int

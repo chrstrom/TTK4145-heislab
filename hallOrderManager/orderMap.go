@@ -1,16 +1,16 @@
 package hallOrderManager
 
-type OrderMap map[string]map[int]Order
+type OrderMap map[string]map[int]HallOrder
 
-func (om OrderMap) update(order Order) {
+func (om OrderMap) update(order HallOrder) {
 	_, ok := om[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]Order)
+		om[order.OwnerID] = make(map[int]HallOrder)
 	}
 	om[order.OwnerID][order.ID] = order
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found bool) {
+func (om OrderMap) getOrder(ownerID string, orderID int) (order HallOrder, found bool) {
 	_, ok := om[ownerID]
 	if ok {
 		o, ok2 := om[ownerID][orderID]
@@ -18,7 +18,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found boo
 			return o, true
 		}
 	}
-	return Order{}, false
+	return HallOrder{}, false
 }
 
 /*

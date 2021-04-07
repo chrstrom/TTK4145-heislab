@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"sort"
 
-	"../network"
+	msg "../orderTypes"
 )
 
-type OrderMap map[string]map[int]network.HallOrder
+type OrderMap map[string]map[int]msg.HallOrder
 
-func (om OrderMap) update(order network.HallOrder) {
+func (om OrderMap) update(order msg.HallOrder) {
 	_, ok := om[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]network.HallOrder)
+		om[order.OwnerID] = make(map[int]msg.HallOrder)
 	}
 	om[order.OwnerID][order.ID] = order
 
 	om.printOrderMap()
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order network.HallOrder, found bool) {
+func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
 	_, ok := om[ownerID]
 	if ok {
 		o, ok2 := om[ownerID][orderID]
@@ -27,7 +27,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order network.HallOrde
 			return o, true
 		}
 	}
-	return network.HallOrder{}, false
+	return msg.HallOrder{}, false
 }
 
 func (om OrderMap) printOrderMap() {
@@ -59,11 +59,11 @@ func (om OrderMap) printOrderMap() {
 			o := om[id][oid]
 			state := ""
 			switch o.State {
-			case network.Received:
+			case msg.Received:
 				state = "Received"
-			case network.Delegate:
+			case msg.Delegate:
 				state = "Delegate"
-			case network.Serving:
+			case msg.Serving:
 				state = "serving"
 			}
 			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)

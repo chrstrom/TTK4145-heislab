@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"../localOrderDelegation"
-	"../network"
+	msg "../orderTypes"
 )
 
 const orderReplyTime = time.Millisecond * 50
@@ -18,15 +18,15 @@ type HallOrderManager struct {
 
 	localRequestChannel <-chan localOrderDelegation.LocalOrder
 
-	requestToNetwork           chan<- network.OrderStamped
-	delegationConfirmToNetwork chan<- network.OrderStamped
-	delegateToNetwork          chan<- network.OrderStamped
-	orderSyncToNetwork         chan<- network.HallOrder
+	requestToNetwork           chan<- msg.OrderStamped
+	delegationConfirmToNetwork chan<- msg.OrderStamped
+	delegateToNetwork          chan<- msg.OrderStamped
+	orderSyncToNetwork         chan<- msg.HallOrder
 
-	requestReplyFromNetwork           <-chan network.OrderStamped
-	orderDelegationConfirmFromNetwork <-chan network.OrderStamped
-	delegationFromNetwork             <-chan network.OrderStamped
-	orderSyncFromNetwork              <-chan network.HallOrder
+	requestReplyFromNetwork           <-chan msg.OrderStamped
+	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped
+	delegationFromNetwork             <-chan msg.OrderStamped
+	orderSyncFromNetwork              <-chan msg.HallOrder
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

@@ -5,6 +5,7 @@ import (
 
 	"../network/bcast"
 	"../network/peers"
+	msg "../orderTypes"
 )
 
 const duplicatesOfMessages = 3
@@ -13,22 +14,22 @@ type Node struct {
 	id               string
 	messageIDCounter int
 
-	networkChannels NetworkChannels
+	networkChannels msg.NetworkChannels
 
 	// Network channels
 	peerUpdateChannel                                            chan peers.PeerUpdate
 	peerTxEnable                                                 chan bool
-	newRequestChannelTx, newRequestChannelRx                     chan NetworkOrder
-	newRequestReplyChannelTx, newRequestReplyChannelRx           chan NetworkOrder
-	delegateOrderChannelTx, delegateOrderChannelRx               chan NetworkOrder
-	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan NetworkOrder
-	orderCompleteChannelTx, orderCompleteChannelRx               chan NetworkOrder
-	orderSyncChannelTx, orderSyncChannelRx                       chan HallOrder
+	newRequestChannelTx, newRequestChannelRx                     chan msg.NetworkOrder
+	newRequestReplyChannelTx, newRequestReplyChannelRx           chan msg.NetworkOrder
+	delegateOrderChannelTx, delegateOrderChannelRx               chan msg.NetworkOrder
+	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan msg.NetworkOrder
+	orderCompleteChannelTx, orderCompleteChannelRx               chan msg.NetworkOrder
+	orderSyncChannelTx, orderSyncChannelRx                       chan msg.HallOrder
 
 	receivedMessages map[string][]int
 }
 
-func NetworkNode(id string, channels NetworkChannels) {
+func NetworkNode(id string, channels msg.NetworkChannels) {
 
 	node := initializeNetworkNode(id, channels)
 
@@ -38,7 +39,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 		// Channels from the hall order manager to the network
 		case request := <-node.networkChannels.RequestToNetwork:
 
-			newRequest := NetworkOrder{
+			newRequest := msg.NetworkOrder{
 				SenderID:  node.id,
 				MessageID: node.messageIDCounter,
 				Order:     request}
@@ -51,7 +52,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 
 		case reply := <-node.networkChannels.RequestReplyToNetwork:
 
-			newReplyToRequest := NetworkOrder{
+			newReplyToRequest := msg.NetworkOrder{
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: reply.ID,
@@ -65,7 +66,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 
 		case delegation := <-node.networkChannels.DelegateOrderToNetwork:
 
-			orderToBeDelegated := NetworkOrder{
+			orderToBeDelegated := msg.NetworkOrder{
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: delegation.ID,
@@ -79,7 +80,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 
 		case confirm := <-node.networkChannels.DelegationConfirmToNetwork:
 
-			confirmationOfDelegation := NetworkOrder{
+			confirmationOfDelegation := msg.NetworkOrder{
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: confirm.ID,
@@ -93,7 +94,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 
 		case complete := <-node.networkChannels.OrderCompleteToNetwork:
 
-			orderCompleted := NetworkOrder{
+			orderCompleted := msg.NetworkOrder{
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: complete.ID,
@@ -127,7 +128,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					request.MessageID)
 				//fmt.Printf("%#v \n", request)
 
-				message := OrderStamped{
+				message := msg.OrderStamped{
 					ID:      request.SenderID,
 					OrderID: request.Order.OrderID,
 					Order:   request.Order.Order}
@@ -148,7 +149,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					replyToRequest.MessageID)
 				//fmt.Printf("%#v \n", requestReply)
 
-				message := OrderStamped{
+				message := msg.OrderStamped{
 					ID:      replyToRequest.SenderID,
 					OrderID: replyToRequest.Order.OrderID,
 					Order:   replyToRequest.Order.Order}
@@ -169,7 +170,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					delegation.MessageID)
 				//fmt.Printf("%#v \n", delegation)
 
-				message := OrderStamped{
+				message := msg.OrderStamped{
 					ID:      delegation.SenderID,
 					OrderID: delegation.Order.OrderID,
 					Order:   delegation.Order.Order}
@@ -190,7 +191,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 					confirmation.MessageID)
 				//fmt.Printf("%#v \n", confirmation)
 
-				message := OrderStamped{
+				message := msg.OrderStamped{
 					ID:      confirmation.SenderID,
 					OrderID: confirmation.Order.OrderID,
 					Order:   confirmation.Order.Order}
@@ -222,7 +223,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 	}
 }
 
-func initializeNetworkNode(id string, channels NetworkChannels) Node {
+func initializeNetworkNode(id string, channels msg.NetworkChannels) Node {
 
 	var node Node
 
@@ -236,23 +237,23 @@ func initializeNetworkNode(id string, channels NetworkChannels) Node {
 	go peers.Transmitter(25372, node.id, node.peerTxEnable)
 	go peers.Receiver(25372, node.peerUpdateChannel)
 
-	node.newRequestChannelTx = make(chan NetworkOrder)
-	node.newRequestChannelRx = make(chan NetworkOrder)
+	node.newRequestChannelTx = make(chan msg.NetworkOrder)
+	node.newRequestChannelRx = make(chan msg.NetworkOrder)
 
-	node.newRequestReplyChannelTx = make(chan NetworkOrder)
-	node.newRequestReplyChannelRx = make(chan NetworkOrder)
+	node.newRequestReplyChannelTx = make(chan msg.NetworkOrder)
+	node.newRequestReplyChannelRx = make(chan msg.NetworkOrder)
 
-	node.delegateOrderChannelTx = make(chan NetworkOrder)
-	node.delegateOrderChannelRx = make(chan NetworkOrder)
+	node.delegateOrderChannelTx = make(chan msg.NetworkOrder)
+	node.delegateOrderChannelRx = make(chan msg.NetworkOrder)
 
-	node.delegateOrderConfirmChannelTx = make(chan NetworkOrder)
-	node.delegateOrderConfirmChannelRx = make(chan NetworkOrder)
+	node.delegateOrderConfirmChannelTx = make(chan msg.NetworkOrder)
+	node.delegateOrderConfirmChannelRx = make(chan msg.NetworkOrder)
 
-	node.orderCompleteChannelTx = make(chan NetworkOrder)
-	node.orderCompleteChannelRx = make(chan NetworkOrder)
+	node.orderCompleteChannelTx = make(chan msg.NetworkOrder)
+	node.orderCompleteChannelRx = make(chan msg.NetworkOrder)
 
-	node.orderSyncChannelTx = make(chan HallOrder)
-	node.orderSyncChannelRx = make(chan HallOrder)
+	node.orderSyncChannelTx = make(chan msg.HallOrder)
+	node.orderSyncChannelRx = make(chan msg.HallOrder)
 
 	go bcast.Transmitter(25373, node.newRequestChannelTx)
 	go bcast.Receiver(25373, node.newRequestChannelRx)

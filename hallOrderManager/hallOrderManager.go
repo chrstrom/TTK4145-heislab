@@ -5,14 +5,14 @@ import (
 	"math/rand"
 
 	"../localOrderDelegation"
-	"../network"
+	msg "../orderTypes"
 	"../timer"
 )
 
 func OrderManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
-	channels network.NetworkChannels) {
+	channels msg.NetworkChannels) {
 
 	manager := initializeManager(id, localRequestCh, channels)
 
@@ -45,7 +45,7 @@ func OrderManager(
 func initializeManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
-	channels network.NetworkChannels) HallOrderManager {
+	channels msg.NetworkChannels) HallOrderManager {
 
 	var manager HallOrderManager
 
@@ -78,10 +78,10 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager HallOrd
 	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
 
 	// This order will get synced with every elevator on the network
-	order := network.HallOrder{
+	order := msg.HallOrder{
 		OwnerID: manager.id,
 		ID:      manager.orderIDCounter,
-		State:   network.Received,
+		State:   msg.Received,
 		Floor:   request.Floor,
 		Dir:     request.Dir}
 
@@ -97,24 +97,24 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager HallOrd
 	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
-	orderToNet := network.OrderStamped{
+	orderToNet := msg.OrderStamped{
 		OrderID: order.ID,
-		Order:   network.Order{Floor: order.Floor, Dir: order.Dir}}
+		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
 	manager.requestToNetwork <- orderToNet
 }
 
-func handleReplyFromNetwork(reply network.OrderStamped, manager HallOrderManager) {
+func handleReplyFromNetwork(reply msg.OrderStamped, manager HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, reply.OrderID)
-	if valid && order.State == network.Received {
+	if valid && order.State == msg.Received {
 		order.Costs[reply.ID] = reply.Order.Cost
 	}
 }
 
-func handleConfirmationFromNetwork(confirm network.OrderStamped, manager HallOrderManager) {
+func handleConfirmationFromNetwork(confirm msg.OrderStamped, manager HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
-	if valid && order.State == network.Delegate {
-		order.State = network.Serving
+	if valid && order.State == msg.Delegate {
+		order.State = msg.Serving
 		fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
 
 		manager.orders.update(order)
@@ -124,23 +124,23 @@ func handleConfirmationFromNetwork(confirm network.OrderStamped, manager HallOrd
 	}
 }
 
-func acceptDelegatedHallOrder(delegation network.OrderStamped, manager HallOrderManager) {
-	order := network.HallOrder{OwnerID: delegation.ID,
+func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager HallOrderManager) {
+	order := msg.HallOrder{OwnerID: delegation.ID,
 		ID:            delegation.OrderID,
 		DelegatedToID: manager.id,
-		State:         network.Serving,
+		State:         msg.Serving,
 		Floor:         delegation.Order.Floor,
 		Dir:           delegation.Order.Dir}
 
 	manager.orders.update(order)
-	reply := network.OrderStamped{
+	reply := msg.OrderStamped{
 		ID:      order.OwnerID,
 		OrderID: order.ID,
-		Order:   network.Order{Floor: order.Floor, Dir: order.Dir}}
+		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 	manager.delegationConfirmToNetwork <- reply
 }
 
-func synchronizeOrderFromNetwork(order network.HallOrder, manager HallOrderManager) {
+func synchronizeOrderFromNetwork(order msg.HallOrder, manager HallOrderManager) {
 	// Receive an order from the network and add it to the list of hall orders
 	if order.OwnerID != manager.id {
 		manager.orders.update(order)
@@ -149,7 +149,7 @@ func synchronizeOrderFromNetwork(order network.HallOrder, manager HallOrderManag
 
 func delegateHallOrder(orderID int, manager HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, orderID)
-	if valid && order.State == network.Received {
+	if valid && order.State == msg.Received {
 		id := getIDOfLowestCost(order.Costs)
 		if id == "" {
 			id = manager.id
@@ -160,17 +160,17 @@ func delegateHallOrder(orderID int, manager HallOrderManager) {
 			//send order to local elevator
 			fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
 
-			order.State = network.Serving
+			order.State = msg.Serving
 		} else {
 			fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
 			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
 
-			order.State = network.Delegate
+			order.State = msg.Delegate
 
-			message := network.OrderStamped{
+			message := msg.OrderStamped{
 				ID:      order.DelegatedToID,
 				OrderID: orderID,
-				Order:   network.Order{Floor: order.Floor, Dir: order.Dir}}
+				Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
 			manager.delegateToNetwork <- message
 		}
@@ -180,10 +180,10 @@ func delegateHallOrder(orderID int, manager HallOrderManager) {
 
 func selfServeHallOrder(orderID int, manager HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, orderID)
-	if valid && order.State == network.Delegate {
+	if valid && order.State == msg.Delegate {
 		//Send order to local elevator
 		order.DelegatedToID = manager.id
-		order.State = network.Serving
+		order.State = msg.Serving
 
 		fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
 
@@ -191,7 +191,7 @@ func selfServeHallOrder(orderID int, manager HallOrderManager) {
 	}
 }
 
-func orderStateBroadcast(order network.HallOrder, manager HallOrderManager) {
+func orderStateBroadcast(order msg.HallOrder, manager HallOrderManager) {
 	// A message should be put on the other end of this channel whenever a local order is received
 	// NOTE!!!!!!!!!! Should also be synced when an order is done!!!!
 	manager.orderSyncToNetwork <- order

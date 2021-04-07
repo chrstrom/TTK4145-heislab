@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"../network/localip"
+	types "../orderTypes"
 )
 
 func GetNodeID() string {
@@ -18,22 +19,22 @@ func GetNodeID() string {
 	return id
 }
 
-func CreateNetworkChannelStruct() NetworkChannels {
-	var networkChannels NetworkChannels
+func CreateNetworkChannelStruct() types.NetworkChannels {
+	var networkChannels types.NetworkChannels
 
-	networkChannels.RequestToNetwork 				= make(chan OrderStamped)
-	networkChannels.DelegateOrderToNetwork 			= make(chan OrderStamped)
-	networkChannels.RequestReplyToNetwork 			= make(chan OrderStamped)
-	networkChannels.DelegationConfirmToNetwork 		= make(chan OrderStamped)
-	networkChannels.OrderCompleteToNetwork 			= make(chan OrderStamped)
-	networkChannels.SyncOrderToNetwork				= make(chan HallOrder)
+	networkChannels.RequestToNetwork 				= make(chan types.OrderStamped)
+	networkChannels.DelegateOrderToNetwork 			= make(chan types.OrderStamped)
+	networkChannels.RequestReplyToNetwork 			= make(chan types.OrderStamped)
+	networkChannels.DelegationConfirmToNetwork 		= make(chan types.OrderStamped)
+	networkChannels.OrderCompleteToNetwork 			= make(chan types.OrderStamped)
+	networkChannels.SyncOrderToNetwork				= make(chan types.HallOrder)
 
-	networkChannels.RequestFromNetwork 				= make(chan OrderStamped)
-	networkChannels.DelegateFromNetwork 			= make(chan	OrderStamped)
-	networkChannels.RequestReplyFromNetwork 		= make(chan OrderStamped)
-	networkChannels.DelegationConfirmFromNetwork 	= make(chan OrderStamped)
-	networkChannels.OrderCompleteFromNetwork 		= make(chan OrderStamped)
-	networkChannels.SyncOrderFromNetwork			= make(chan HallOrder)
+	networkChannels.RequestFromNetwork 				= make(chan types.OrderStamped)
+	networkChannels.DelegateFromNetwork 			= make(chan	types.OrderStamped)
+	networkChannels.RequestReplyFromNetwork 		= make(chan types.OrderStamped)
+	networkChannels.DelegationConfirmFromNetwork 	= make(chan types.OrderStamped)
+	networkChannels.OrderCompleteFromNetwork 		= make(chan types.OrderStamped)
+	networkChannels.SyncOrderFromNetwork			= make(chan types.HallOrder)
 
 	return networkChannels
 }

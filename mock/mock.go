@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"../elevio"
-	"../network"
+	msg "../orderTypes"
 )
 
-func ReplyToRequests(request <-chan network.OrderStamped, reply chan<- network.OrderStamped) {
+func ReplyToRequests(request <-chan msg.OrderStamped, reply chan<- msg.OrderStamped) {
 	for {
 		select {
 		case r := <-request:
-			rep := network.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: network.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
+			rep := msg.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: msg.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
 			rep.Order.Cost = rand.Intn(1000)
 			reply <- rep
 			//fmt.Printf("	net %v - Sending mock reply \n", r.OrderID)
@@ -20,11 +20,11 @@ func ReplyToRequests(request <-chan network.OrderStamped, reply chan<- network.O
 	}
 }
 
-func ReplyToDelegations(delegation <-chan network.OrderStamped, reply chan<- network.OrderStamped) {
+func ReplyToDelegations(delegation <-chan msg.OrderStamped, reply chan<- msg.OrderStamped) {
 	for {
 		select {
 		case d := <-delegation:
-			rep := network.OrderStamped{ID: d.ID, OrderID: d.OrderID, Order: network.Order{Floor: d.Order.Floor, Dir: d.Order.Dir}}
+			rep := msg.OrderStamped{ID: d.ID, OrderID: d.OrderID, Order: msg.Order{Floor: d.Order.Floor, Dir: d.Order.Dir}}
 			reply <- rep
 			//fmt.Printf("	net %v - Sending mock confirmation \n", d.OrderID)
 		}

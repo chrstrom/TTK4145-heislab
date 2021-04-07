@@ -49,7 +49,7 @@ func (om OrderMap) printOrderMap() {
 		sort.Ints(orders[i])
 		i++
 	}
-	sort.Strings(nodeids)
+	//sort.Strings(nodeids)
 	i = 0
 	for _, id := range nodeids {
 		fmt.Printf("Node: %s \n", id)

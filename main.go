@@ -41,6 +41,7 @@ func main() {
 	go network.NetworkNode(id, networkChannels)
 
 	// Elevator //
+	go localOrderDelegation.OrderDelegator(drv_buttons, hallOrderChannel)
 	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
 	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop, timer_ch)
 

@@ -35,3 +35,19 @@ type OrderSyncNetworkMessage struct {
 	ReceiverID       string
 	Order 			 OrderSync
 }
+
+type NetworkChannels struct {
+	RequestToNetwork           chan OrderStamped
+	DelegateOrderToNetwork     chan OrderStamped
+	RequestReplyToNetwork      chan OrderStamped
+	DelegationConfirmToNetwork chan OrderStamped
+	OrderCompleteToNetwork     chan OrderStamped
+	SyncOrderToNetwork		   chan OrderSync
+
+	RequestFromNetwork           chan OrderStamped
+	DelegateFromNetwork          chan OrderStamped
+	RequestReplyFromNetwork      chan OrderStamped
+	DelegationConfirmFromNetwork chan OrderStamped
+	OrderCompleteFromNetwork     chan OrderStamped
+	SyncOrderFromNetwork		 chan OrderSync
+}

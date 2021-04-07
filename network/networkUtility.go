@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"../network/localip"
-	"../hallOrderManager"
 )
 
 func GetNodeID() string {
@@ -27,14 +26,14 @@ func CreateNetworkChannelStruct() NetworkChannels {
 	networkChannels.RequestReplyToNetwork 			= make(chan OrderStamped)
 	networkChannels.DelegationConfirmToNetwork 		= make(chan OrderStamped)
 	networkChannels.OrderCompleteToNetwork 			= make(chan OrderStamped)
-	networkChannels.SyncOrderToNetwork				= make(chan hallOrderManager.HallOrder)
+	networkChannels.SyncOrderToNetwork				= make(chan HallOrder)
 
 	networkChannels.RequestFromNetwork 				= make(chan OrderStamped)
 	networkChannels.DelegateFromNetwork 			= make(chan	OrderStamped)
 	networkChannels.RequestReplyFromNetwork 		= make(chan OrderStamped)
 	networkChannels.DelegationConfirmFromNetwork 	= make(chan OrderStamped)
 	networkChannels.OrderCompleteFromNetwork 		= make(chan OrderStamped)
-	networkChannels.SyncOrderFromNetwork			= make(chan hallOrderManager.HallOrder)
+	networkChannels.SyncOrderFromNetwork			= make(chan HallOrder)
 
 	return networkChannels
 }

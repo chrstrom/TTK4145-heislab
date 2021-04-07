@@ -1,24 +1,39 @@
 package network
 
-import "../hallOrderManager"
+type OrderStateType int
+
+const (
+	Received OrderStateType = iota
+	Delegate
+	Serving
+)
 
 type Order struct {
-	Floor	int
-	Dir		int
-	Cost    int
+	Floor int
+	Dir   int
+	Cost  int
 }
 
 type OrderStamped struct {
-	ID string
+	ID      string
 	OrderID int
-	Order Order
+	Order   Order
 }
 
 type NetworkOrder struct {
-	SenderID               string
-	MessageID              int
-	ReceiverID             string
-	Order		OrderStamped
+	SenderID   string
+	MessageID  int
+	ReceiverID string
+	Order      OrderStamped
+}
+
+type HallOrder struct {
+	OwnerID       string
+	ID            int
+	DelegatedToID string
+	State         OrderStateType
+	Floor, Dir    int
+	Costs         map[string]int
 }
 
 type NetworkChannels struct {
@@ -27,12 +42,12 @@ type NetworkChannels struct {
 	RequestReplyToNetwork      chan OrderStamped
 	DelegationConfirmToNetwork chan OrderStamped
 	OrderCompleteToNetwork     chan OrderStamped
-	SyncOrderToNetwork		   chan hallOrderManager.HallOrder
+	SyncOrderToNetwork         chan HallOrder
 
 	RequestFromNetwork           chan OrderStamped
 	DelegateFromNetwork          chan OrderStamped
 	RequestReplyFromNetwork      chan OrderStamped
 	DelegationConfirmFromNetwork chan OrderStamped
 	OrderCompleteFromNetwork     chan OrderStamped
-	SyncOrderFromNetwork		 chan hallOrderManager.HallOrder
+	SyncOrderFromNetwork         chan HallOrder
 }

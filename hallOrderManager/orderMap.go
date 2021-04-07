@@ -3,21 +3,23 @@ package hallOrderManager
 import (
 	"fmt"
 	"sort"
+
+	"../network"
 )
 
-type OrderMap map[string]map[int]HallOrder
+type OrderMap map[string]map[int]network.HallOrder
 
-func (om OrderMap) update(order HallOrder) {
+func (om OrderMap) update(order network.HallOrder) {
 	_, ok := om[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]HallOrder)
+		om[order.OwnerID] = make(map[int]network.HallOrder)
 	}
 	om[order.OwnerID][order.ID] = order
 
 	om.printOrderMap()
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order HallOrder, found bool) {
+func (om OrderMap) getOrder(ownerID string, orderID int) (order network.HallOrder, found bool) {
 	_, ok := om[ownerID]
 	if ok {
 		o, ok2 := om[ownerID][orderID]
@@ -25,7 +27,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order HallOrder, found
 			return o, true
 		}
 	}
-	return HallOrder{}, false
+	return network.HallOrder{}, false
 }
 
 func (om OrderMap) printOrderMap() {
@@ -57,11 +59,11 @@ func (om OrderMap) printOrderMap() {
 			o := om[id][oid]
 			state := ""
 			switch o.State {
-			case Received:
+			case network.Received:
 				state = "Received"
-			case Delegate:
+			case network.Delegate:
 				state = "Delegate"
-			case Serving:
+			case network.Serving:
 				state = "serving"
 			}
 			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)

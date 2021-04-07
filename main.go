@@ -5,7 +5,7 @@ import (
 	"time"
 
 	io "./elevio"
-	"./fsm"
+	"./localElevatorFSM"
 	"./hallOrderManager"
 	"./localOrderDelegation"
 	"./mock"

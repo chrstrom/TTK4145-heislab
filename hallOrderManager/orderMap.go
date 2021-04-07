@@ -1,5 +1,10 @@
 package hallOrderManager
 
+import (
+	"fmt"
+	"sort"
+)
+
 type OrderMap map[string]map[int]Order
 
 func (om OrderMap) update(order Order) {
@@ -8,6 +13,8 @@ func (om OrderMap) update(order Order) {
 		om[order.OwnerID] = make(map[int]Order)
 	}
 	om[order.OwnerID][order.ID] = order
+
+	om.printOrderMap()
 }
 
 func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found bool) {
@@ -19,6 +26,49 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found boo
 		}
 	}
 	return Order{}, false
+}
+
+func (om OrderMap) printOrderMap() {
+	//fmt.Print("\033[H\033[2J") //Clear screen in Go console
+	/*cmd := exec.Command("cmd", "/c", "cls") //Clear screen in windows cmd
+	cmd.Stdout = os.Stdout
+	cmd.Run()*/
+
+	fmt.Println("********************************OrderMap********************************")
+	nodeids := make([]string, 0, len(om))
+	var orders [][]int
+	i := 0
+	for id, omap := range om {
+		nodeids = append(nodeids, id)
+		orders = append(orders, []int{})
+		for oid, _ := range omap {
+			orders[i] = append(orders[i], oid)
+		}
+		sort.Ints(orders[i])
+		i++
+	}
+	sort.Strings(nodeids)
+	i = 0
+	for _, id := range nodeids {
+		fmt.Printf("Node: %s \n", id)
+		fmt.Println("Order id    State        Delegated to          Floor    Direction")
+
+		for _, oid := range orders[i] {
+			o := om[id][oid]
+			state := ""
+			switch o.State {
+			case Received:
+				state = "Received"
+			case Delegate:
+				state = "Delegate"
+			case Serving:
+				state = "serving"
+			}
+			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
+		}
+		i++
+		fmt.Printf("\n\n")
+	}
 }
 
 /*

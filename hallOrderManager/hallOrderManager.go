@@ -1,7 +1,6 @@
 package hallOrderManager
 
 import (
-	"fmt"
 	"math/rand"
 
 	"../localOrderDelegation"
@@ -24,8 +23,10 @@ func initializeManager(
 	manager.localRequestChannel = localRequestCh
 	manager.requestToNetwork = channels.RequestToNetwork
 	manager.delegateToNetwork = channels.DelegateOrderToNetwork
+	manager.delegationConfirmToNetwork = channels.DelegationConfirmToNetwork
 	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
+	manager.delegationFromNetwork = channels.DelegateFromNetwork
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
@@ -44,14 +45,18 @@ func OrderManager(
 		select {
 		case request := <-manager.localRequestChannel:
 			//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
-			order := Order{ID: manager.orderIDCounter, OwnerID: manager.id, State: Received, Floor: request.Floor, Dir: request.Dir}
+			order := Order{OwnerID: manager.id,
+				ID:    manager.orderIDCounter,
+				State: Received,
+				Floor: request.Floor,
+				Dir:   request.Dir}
 			manager.orderIDCounter++
 			order.costs = make(map[string]int)
 			//get local elevator cost in some way
 			order.costs[manager.id] = rand.Intn(1000)
 
 			manager.orders.update(order)
-			fmt.Printf("%v - local request received \n", order.ID)
+			//fmt.Printf("%v - local request received \n", order.ID)
 
 			timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
@@ -62,15 +67,6 @@ func OrderManager(
 			o, valid := manager.orders.getOrder(manager.id, reply.OrderID)
 			if valid && o.State == Received {
 				o.costs[reply.ID] = reply.Cost
-			}
-
-		case confirm := <-manager.orderDelegationConfirmFromNetwork:
-			o, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
-			if valid && o.State == Delegate {
-				o.State = Serving
-				fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
-
-				manager.orders.update(o)
 			}
 
 		case orderID := <-manager.orderReplyTimeoutChannel:
@@ -84,11 +80,11 @@ func OrderManager(
 
 				if id == manager.id {
 					//send order to local elevator
-					fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(o.costs))
+					//fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(o.costs))
 
 					o.State = Serving
 				} else {
-					fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(o.costs))
+					//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(o.costs))
 					timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
 
 					o.State = Delegate
@@ -99,6 +95,26 @@ func OrderManager(
 				manager.orders.update(o)
 			}
 
+		case delegation := <-manager.delegationFromNetwork:
+			order := Order{OwnerID: delegation.ID,
+				ID:            delegation.OrderID,
+				DelegatedToID: manager.id,
+				State:         Serving,
+				Floor:         delegation.Floor,
+				Dir:           delegation.Dir}
+			manager.orders.update(order)
+			reply := network.DelegationConfirm{ID: order.OwnerID, OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
+			manager.delegationConfirmToNetwork <- reply
+
+		case confirm := <-manager.orderDelegationConfirmFromNetwork:
+			o, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
+			if valid && o.State == Delegate {
+				o.State = Serving
+				//fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
+
+				manager.orders.update(o)
+			}
+
 		case orderID := <-manager.orderDelegationTimeoutChannel:
 			o, valid := manager.orders.getOrder(manager.id, orderID)
 			if valid && o.State == Delegate {
@@ -106,7 +122,7 @@ func OrderManager(
 				o.DelegatedToID = manager.id
 				o.State = Serving
 
-				fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
+				//fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
 
 				manager.orders.update(o)
 			}

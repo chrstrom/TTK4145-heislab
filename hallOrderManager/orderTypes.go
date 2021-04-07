@@ -18,12 +18,12 @@ const orderReplyTime = time.Millisecond * 50
 const orderDelegationTime = time.Millisecond * 50
 
 type Order struct {
+	OwnerID       string
 	ID            int
+	DelegatedToID string
 	State         OrderStateType
 	Floor, Dir    int
 	costs         map[string]int
-	OwnerID       string
-	DelegatedToID string
 }
 
 type HallOrderManager struct {
@@ -34,11 +34,13 @@ type HallOrderManager struct {
 
 	localRequestChannel <-chan localOrderDelegation.LocalOrder
 
-	requestToNetwork  chan<- network.NewRequest
-	delegateToNetwork chan<- network.Delegation
+	requestToNetwork           chan<- network.NewRequest
+	delegateToNetwork          chan<- network.Delegation
+	delegationConfirmToNetwork chan<- network.DelegationConfirm
 
 	requestReplyFromNetwork           <-chan network.RequestReply
 	orderDelegationConfirmFromNetwork <-chan network.DelegationConfirm
+	delegationFromNetwork             <-chan network.Delegation
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

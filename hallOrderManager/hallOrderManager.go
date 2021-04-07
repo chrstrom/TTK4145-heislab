@@ -48,7 +48,13 @@ func OrderManager(
 		select {
 		case request := <-manager.localRequestChannel:
 			//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
-			order := Order{ID: manager.orderIDCounter, OwnerID: manager.id, State: Received, Floor: request.Floor, Dir: request.Dir}
+			order := Order{
+				ID: manager.orderIDCounter,
+				OwnerID: manager.id,
+				State:   Received,
+				Floor: request.Floor,
+				Dir: request.Dir}
+				
 			manager.orderIDCounter++
 			order.costs = make(map[string]int)
 			//get local elevator cost in some way
@@ -59,13 +65,16 @@ func OrderManager(
 
 			timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
-			orderToNet := network.Order{OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
+			orderToNet := network.OrderStamped{
+				OrderID: order.ID,
+				Order:   network.Order{Floor: order.Floor, Dir: order.Dir}}
+
 			manager.requestToNetwork <- orderToNet
 
 		case reply := <-manager.requestReplyFromNetwork:
 			o, valid := manager.orders.getOrder(manager.id, reply.OrderID)
 			if valid && o.State == Received {
-				o.costs[reply.ID] = reply.Cost
+				o.costs[reply.ID] = reply.Order.Cost
 			}
 
 		case confirm := <-manager.orderDelegationConfirmFromNetwork:
@@ -108,7 +117,11 @@ func OrderManager(
 
 					o.State = Delegate
 
-					message := network.Order{ID: o.DelegatedToID, OrderID: orderID, Floor: o.Floor, Dir: o.Dir}
+					message := network.OrderStamped{
+						ID:      o.DelegatedToID,
+						OrderID: orderID,
+						Order:   network.Order{Floor: o.Floor, Dir: o.Dir}}
+
 					manager.delegateToNetwork <- message
 				}
 				manager.orders.update(o)

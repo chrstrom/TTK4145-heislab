@@ -41,9 +41,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 			newRequest := NetworkOrder{
 				SenderID:  node.id,
 				MessageID: node.messageIDCounter,
-				Floor:     request.Floor,
-				Direction: request.Dir,
-				OrderID:   request.OrderID}
+				Order: request}
 
 			node.messageIDCounter++
 
@@ -57,10 +55,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: reply.ID,
-				Floor:      reply.Floor,
-				Direction:  reply.Dir,
-				OrderID:    reply.OrderID,
-				Cost:       reply.Cost}
+				Order: 		reply}
 
 			node.messageIDCounter++
 
@@ -74,9 +69,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: delegation.ID,
-				Floor:      delegation.Floor,
-				Direction:  delegation.Dir,
-				OrderID:    delegation.OrderID}
+				Order:		delegation}
 
 			node.messageIDCounter++
 
@@ -90,9 +83,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: confirm.ID,
-				Floor:      confirm.Floor,
-				Direction:  confirm.Dir,
-				OrderID:    confirm.OrderID}
+				Order:		confirm}
 
 			node.messageIDCounter++
 
@@ -106,9 +97,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 				SenderID:   node.id,
 				MessageID:  node.messageIDCounter,
 				ReceiverID: complete.ID,
-				Floor:      complete.Floor,
-				Direction:  complete.Dir,
-				OrderID:    complete.OrderID}
+				Order:		complete}
 
 			node.messageIDCounter++
 
@@ -142,11 +131,10 @@ func NetworkNode(id string, channels NetworkChannels) {
 					request.MessageID)
 				//fmt.Printf("%#v \n", request)
 
-				message := Order{
+				message := OrderStamped{
 					ID:      request.SenderID,
-					OrderID: request.OrderID,
-					Floor:   request.Floor,
-					Dir:     request.Direction}
+					OrderID: request.Order.OrderID,
+					Order:	 request.Order.Order}
 
 				node.networkChannels.RequestFromNetwork <- message
 			}
@@ -164,11 +152,10 @@ func NetworkNode(id string, channels NetworkChannels) {
 					replyToRequest.MessageID)
 				//fmt.Printf("%#v \n", requestReply)
 
-				message := Order{ID: replyToRequest.SenderID,
-					OrderID: replyToRequest.OrderID,
-					Floor:   replyToRequest.Floor,
-					Dir:     replyToRequest.Direction,
-					Cost:    replyToRequest.Cost}
+				message := OrderStamped{
+					ID: replyToRequest.SenderID,
+					OrderID: replyToRequest.Order.OrderID,
+					Order: replyToRequest.Order.Order}
 
 				node.networkChannels.RequestReplyFromNetwork <- message
 			}
@@ -186,10 +173,10 @@ func NetworkNode(id string, channels NetworkChannels) {
 					delegation.MessageID)
 				//fmt.Printf("%#v \n", delegation)
 
-				message := Order{ID: delegation.SenderID,
-					OrderID: delegation.OrderID,
-					Floor:   delegation.Floor,
-					Dir:     delegation.Direction}
+				message := OrderStamped{
+					ID: delegation.SenderID,
+					OrderID: delegation.Order.OrderID,
+					Order: delegation.Order.Order}
 
 				node.networkChannels.DelegateFromNetwork <- message
 			}
@@ -207,10 +194,10 @@ func NetworkNode(id string, channels NetworkChannels) {
 					confirmation.MessageID)
 				//fmt.Printf("%#v \n", confirmation)
 
-				message := Order{ID: confirmation.SenderID,
-					OrderID: confirmation.OrderID,
-					Floor:   confirmation.Floor,
-					Dir:     confirmation.Direction}
+				message := OrderStamped{
+					ID: confirmation.SenderID,
+					OrderID: confirmation.Order.OrderID,
+					Order:	confirmation.Order.Order}
 
 				node.networkChannels.DelegationConfirmFromNetwork <- message
 			}

@@ -5,6 +5,7 @@ import (
 
 	"../network/bcast"
 	"../network/peers"
+	"../hallOrderManager"	
 )
 
 const duplicatesOfMessages = 3
@@ -23,7 +24,7 @@ type Node struct {
 	delegateOrderChannelTx, delegateOrderChannelRx               chan NetworkOrder
 	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan NetworkOrder
 	orderCompleteChannelTx, orderCompleteChannelRx               chan NetworkOrder
-	orderSyncChannelTx, orderSyncChannelRx                       chan OrderSyncNetworkMessage
+	orderSyncChannelTx, orderSyncChannelRx                       chan hallOrderManager.HallOrder
 
 	receivedMessages map[string][]int
 }
@@ -106,10 +107,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 			}
 
 		case order := <-node.networkChannels.SyncOrderToNetwork:
-			message := OrderSyncNetworkMessage{
-				SenderID:   node.id,
-				MessageID:  node.messageIDCounter,
-				ReceiverID: order.ID}
+			message := hallOrderManager.HallOrder{}
 
 			node.messageIDCounter++
 
@@ -220,7 +218,7 @@ func NetworkNode(id string, channels NetworkChannels) {
 			}
 
 		case _ = <-node.orderSyncChannelRx:
-			message := OrderSync{}
+			message := hallOrderManager.HallOrder{}
 
 			node.networkChannels.SyncOrderFromNetwork <- message
 
@@ -257,8 +255,8 @@ func initializeNetworkNode(id string, channels NetworkChannels) Node {
 	node.orderCompleteChannelTx = make(chan NetworkOrder)
 	node.orderCompleteChannelRx = make(chan NetworkOrder)
 
-	node.orderSyncChannelTx = make(chan OrderSyncNetworkMessage)
-	node.orderSyncChannelRx = make(chan OrderSyncNetworkMessage)
+	node.orderSyncChannelTx = make(chan hallOrderManager.HallOrder)
+	node.orderSyncChannelRx = make(chan hallOrderManager.HallOrder)
 
 	go bcast.Transmitter(25373, node.newRequestChannelTx)
 	go bcast.Receiver(25373, node.newRequestChannelRx)

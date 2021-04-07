@@ -1,5 +1,6 @@
 package network
 
+import "../hallOrderManager"
 
 type Order struct {
 	Floor	int
@@ -13,27 +14,11 @@ type OrderStamped struct {
 	Order Order
 }
 
-
 type NetworkOrder struct {
 	SenderID               string
 	MessageID              int
 	ReceiverID             string
 	Order		OrderStamped
-}
-
-type OrderSync struct {
-	ID         		string
-	OrderID    		int
-	Floor, Dir		int
-	DelegatedToID 	int
-}
-
-
-type OrderSyncNetworkMessage struct {
-	SenderID         string
-	MessageID        int
-	ReceiverID       string
-	Order 			 OrderSync
 }
 
 type NetworkChannels struct {
@@ -42,12 +27,12 @@ type NetworkChannels struct {
 	RequestReplyToNetwork      chan OrderStamped
 	DelegationConfirmToNetwork chan OrderStamped
 	OrderCompleteToNetwork     chan OrderStamped
-	SyncOrderToNetwork		   chan OrderSync
+	SyncOrderToNetwork		   chan hallOrderManager.HallOrder
 
 	RequestFromNetwork           chan OrderStamped
 	DelegateFromNetwork          chan OrderStamped
 	RequestReplyFromNetwork      chan OrderStamped
 	DelegationConfirmFromNetwork chan OrderStamped
 	OrderCompleteFromNetwork     chan OrderStamped
-	SyncOrderFromNetwork		 chan OrderSync
+	SyncOrderFromNetwork		 chan hallOrderManager.HallOrder
 }

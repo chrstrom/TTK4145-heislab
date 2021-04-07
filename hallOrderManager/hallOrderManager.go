@@ -31,7 +31,7 @@ func OrderManager(
 			acceptDelegatedHallOrder(delegation, manager)
 
 		case order := <-manager.orderSyncFromNetwork:
-			synchronizeNetworkOrders(order, manager)
+			synchronizeOrderFromNetwork(order, manager)
 
 		case orderID := <-manager.orderReplyTimeoutChannel:
 			delegateHallOrder(orderID, manager)
@@ -76,6 +76,8 @@ func initializeManager(
 
 func handleLocalRequest(request localOrderDelegation.LocalOrder, manager HallOrderManager) {
 	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
+
+	// This order will get synced with every elevator on the network
 	order := HallOrder{
 		OwnerID: manager.id,
 		ID:      manager.orderIDCounter,
@@ -85,12 +87,14 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager HallOrd
 
 	manager.orderIDCounter++
 	order.costs = make(map[string]int)
+
 	//get local elevator cost in some way
 	order.costs[manager.id] = rand.Intn(1000)
 
 	manager.orders.update(order)
-	//fmt.Printf("%v - local request received \n", order.ID)
+	orderStateBroadcast(order, manager)
 
+	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
 	orderToNet := network.OrderStamped{
@@ -137,9 +141,9 @@ func acceptDelegatedHallOrder(delegation network.OrderStamped, manager HallOrder
 	manager.delegationConfirmToNetwork <- reply
 }
 
-func synchronizeNetworkOrders(order network.OrderSync, manager HallOrderManager) {
-	if order.ID != manager.id {
-		order := HallOrder{}
+func synchronizeOrderFromNetwork(order HallOrder, manager HallOrderManager) {
+	// Receive an order from the network and add it to the list of hall orders
+	if order.OwnerID != manager.id {
 		manager.orders.update(order)
 	}
 }
@@ -186,4 +190,12 @@ func selfServeHallOrder(orderID int, manager HallOrderManager) {
 
 		manager.orders.update(order)
 	}
+}
+
+func orderStateBroadcast(order HallOrder, manager HallOrderManager) {
+	// A message should be put on the other end of this channel whenever a local order is received
+
+	// NOTE!!!!!!!!!! Should also be synced when an order is done!!!!
+
+	manager.orderSyncToNetwork <- order
 }

@@ -8,12 +8,15 @@ import (
 	"./fsm"
 	"./hallOrderManager"
 	"./localOrderDelegation"
+	"./mock"
 	"./network"
 )
 
 func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
+
+	//testOrderManager()
 
 	numFloors := 4
 	io.Init("localhost:15657", numFloors)
@@ -48,14 +51,28 @@ func main() {
 	//for {
 	//}
 
+}
+
+func testOrderManager() {
+	// Order Manager Channels //
+	networkChannels := network.CreateNetworkChannelStruct()
+	//cabOrderChannel  := make(chan int)
+	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
+
+	// Network //
+	id := network.GetNodeID()
+	go network.NetworkNode(id, networkChannels)
+
+	// Elevator //
+	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
+
 	// /** 	mock functions for testing 		**/
-	/*go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.RequestReplyToNetwork)
-	go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
-	go mock.SendButtonPresses(drv_buttons, time.Second*10)
+	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.RequestReplyToNetwork)
+	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}
 	for {
 		time.Sleep(time.Second * 5)
 		hallOrderChannel <- o
-	}*/
+	}
 }

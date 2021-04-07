@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"../network-go/localip"
+	"../network/localip"
 )
 
 func GetNodeID() string {

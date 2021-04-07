@@ -3,8 +3,8 @@ package network
 import (
 	"fmt"
 
-	"../network-go/bcast"
-	"../network-go/peers"
+	"../network/bcast"
+	"../network/peers"
 )
 
 const duplicatesOfMessages = 3

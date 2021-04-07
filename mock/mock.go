@@ -1,7 +1,6 @@
 package mock
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -9,25 +8,25 @@ import (
 	"../network"
 )
 
-func ReplyToRequests(request <-chan network.NewRequest, reply chan<- network.RequestReply) {
+func ReplyToRequests(request <-chan network.OrderStamped, reply chan<- network.OrderStamped) {
 	for {
 		select {
 		case r := <-request:
-			rep := network.RequestReply{ID: r.ID, OrderID: r.OrderID, Floor: r.Floor, Dir: r.Dir}
-			rep.Cost = rand.Intn(1000)
+			rep := network.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: network.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
+			rep.Order.Cost = rand.Intn(1000)
 			reply <- rep
-			fmt.Printf("	net %v - Sending mock reply \n", r.OrderID)
+			//fmt.Printf("	net %v - Sending mock reply \n", r.OrderID)
 		}
 	}
 }
 
-func ReplyToDelegations(delegation <-chan network.Delegation, reply chan<- network.DelegationConfirm) {
+func ReplyToDelegations(delegation <-chan network.OrderStamped, reply chan<- network.OrderStamped) {
 	for {
 		select {
 		case d := <-delegation:
-			rep := network.DelegationConfirm{ID: d.ID, OrderID: d.OrderID, Floor: d.Floor, Dir: d.Dir}
+			rep := network.OrderStamped{ID: d.ID, OrderID: d.OrderID, Order: network.Order{Floor: d.Order.Floor, Dir: d.Order.Dir}}
 			reply <- rep
-			fmt.Printf("	net %v - Sending mock confirmation \n", d.OrderID)
+			//fmt.Printf("	net %v - Sending mock confirmation \n", d.OrderID)
 		}
 	}
 }

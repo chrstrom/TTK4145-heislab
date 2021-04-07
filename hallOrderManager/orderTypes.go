@@ -3,6 +3,7 @@ package hallOrderManager
 import (
 	"time"
 
+	"../elevio"
 	"../localOrderDelegation"
 	msg "../orderTypes"
 )
@@ -22,6 +23,7 @@ type HallOrderManager struct {
 	delegationConfirmToNetwork chan<- msg.OrderStamped
 	delegateToNetwork          chan<- msg.OrderStamped
 	orderSyncToNetwork         chan<- msg.HallOrder
+	delegateToLocalElevator    chan<- elevio.ButtonEvent
 
 	requestReplyFromNetwork           <-chan msg.OrderStamped
 	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped

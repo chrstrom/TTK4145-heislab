@@ -5,10 +5,9 @@ import (
 	"time"
 
 	io "./elevio"
-	"./localElevatorFSM"
 	"./hallOrderManager"
+	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
-	"./mock"
 	"./network"
 )
 
@@ -30,8 +29,9 @@ func main() {
 
 	// Order Manager Channels //
 	networkChannels := network.CreateNetworkChannelStruct()
-	//cabOrderChannel  := make(chan int)
+	cabOrderChannel := make(chan int)
 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
+	delegateHallOrderChannel := make(chan io.ButtonEvent)
 
 	// IO //
 	go io.PollButtons(drv_buttons)
@@ -44,16 +44,16 @@ func main() {
 	go network.NetworkNode(id, networkChannels)
 
 	// Elevator //
-	go localOrderDelegation.OrderDelegator(drv_buttons, hallOrderChannel)
-	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
-	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop, timer_ch)
+	go localOrderDelegation.OrderDelegator(drv_buttons, hallOrderChannel, cabOrderChannel)
+	go hallOrderManager.OrderManager(id, hallOrderChannel, delegateHallOrderChannel, networkChannels)
+	go fsm.RunElevatorFSM(cabOrderChannel, delegateHallOrderChannel, drv_floors, drv_obstr, drv_stop, timer_ch)
 
-	//for {
-	//}
+	for {
+	}
 
 }
 
-func testOrderManager() {
+/*func testOrderManager() {
 	// Order Manager Channels //
 	networkChannels := network.CreateNetworkChannelStruct()
 	//cabOrderChannel  := make(chan int)
@@ -66,7 +66,7 @@ func testOrderManager() {
 	// Elevator //
 	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
 
-	// /** 	mock functions for testing 		**/
+	// mock functions for testing/
 	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.RequestReplyToNetwork)
 	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
@@ -75,4 +75,4 @@ func testOrderManager() {
 		time.Sleep(time.Second * 5)
 		hallOrderChannel <- o
 	}
-}
+}*/

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"../cabOrderStorage"
 	io "../elevio"
 	"../timer"
 )
@@ -146,26 +147,42 @@ func doorOpenTimer() {
 // This function is the function from the fsm package that will run
 // as a goroutine. Because of this, it should take inputs based on
 // channels, and the for-select will take care of the
-func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
+func RunElevatorFSM(event_cabOrder <-chan int,
+	event_hallOrder <-chan io.ButtonEvent,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
 	event_timer <-chan int) {
 
-	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
+	//Load cab ordes
+	cabOrders := cabOrderStorage.LoadCabOrders()
+	for f := 0; f < N_FLOORS; f++ {
+		elevator.requests[f][2] = cabOrders[f]
+	}
+	fmt.Printf("CabOrders loaded!\n")
+	fmt.Printf("CabOrders %+v\n", cabOrders)
+
 	if elevator.floor == -1 {
 		onInitBetweenFloors()
 	}
 
+	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
 	for {
 		// Dooropen=0, Moving=1, Idle=2
 		fmt.Printf("State:%+v\n", elevator.state)
 
+		//Store cab orders
+		cabOrderStorage.StoreCabOrders(elevator.requests)
+
 		select {
 
-		case newButtonPress := <-event_orderButton:
-			fmt.Printf("%+v\n", newButtonPress)
-			onRequestButtonPress(newButtonPress)
+		case cabOrder := <-event_cabOrder:
+			fmt.Printf("%+v\n", cabOrder)
+			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.ButtonType(N_BUTTONS - 1)})
+
+		case hallOrder := <-event_hallOrder:
+			fmt.Printf("Hallorder recieved!\n")
+			onRequestButtonPress(hallOrder)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)

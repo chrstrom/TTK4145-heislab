@@ -43,26 +43,30 @@ func (om OrderMap) printOrderMap() {
 		}
 	}
 	return*/
-	nodeids := make([]string, 0, len(om))
-	var orders [][]int
+	orders := []struct {
+		nodeid  string
+		orderid []int
+	}{}
 	i := 0
 	for id, omap := range om {
-		nodeids = append(nodeids, id)
-		orders = append(orders, []int{})
+		orders = append(orders, struct {
+			nodeid  string
+			orderid []int
+		}{id, []int{}})
 		for oid, _ := range omap {
-			orders[i] = append(orders[i], oid)
+			orders[i].orderid = append(orders[i].orderid, oid)
 		}
-		sort.Ints(orders[i])
+		sort.Ints(orders[i].orderid)
 		i++
 	}
-	//sort.Strings(nodeids)
+	sort.Slice(orders, func(i, j int) bool { return orders[i].nodeid < orders[j].nodeid })
 	i = 0
-	for _, id := range nodeids {
-		fmt.Printf("Node: %s \n", id)
+	for _, node := range orders {
+		fmt.Printf("Node: %s \n", node.nodeid)
 		fmt.Println("Order id    State        Delegated to          Floor    Direction")
 
-		for _, oid := range orders[i] {
-			o := om[id][oid]
+		for _, oid := range node.orderid {
+			o := om[node.nodeid][oid]
 			state := ""
 			switch o.State {
 			case msg.Received:

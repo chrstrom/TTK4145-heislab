@@ -213,6 +213,6 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 	// A message should be put on the other end of this channel whenever a local order is received
 	// NOTE!!!!!!!!!! Should also be synced when an order is done!!!!
-	//manager.orderSyncToNetwork <- order
-	//manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
+	manager.orderSyncToNetwork <- order
+	manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
 }

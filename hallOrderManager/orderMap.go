@@ -37,12 +37,6 @@ func (om OrderMap) printOrderMap() {
 	cmd.Run()*/
 
 	fmt.Println("********************************OrderMap********************************")
-	/*for _, omap := range om {
-		for _, o := range omap {
-			fmt.Println(o)
-		}
-	}
-	return*/
 	orders := []struct {
 		nodeid  string
 		orderid []int

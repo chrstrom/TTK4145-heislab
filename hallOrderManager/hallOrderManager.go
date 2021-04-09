@@ -1,8 +1,9 @@
 package hallOrderManager
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
+	"os"
 
 	"../localOrderDelegation"
 	msg "../orderTypes"
@@ -38,6 +39,9 @@ func OrderManager(
 
 		case orderID := <-manager.orderDelegationTimeoutChannel:
 			selfServeHallOrder(orderID, &manager)
+
+			//case <-time.After(time.Second * 5):
+			//	manager.logger.Printf("Quiet for 5 seconds")
 		}
 	}
 }
@@ -71,6 +75,10 @@ func initializeManager(
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
 
+	filepath := "log/" + manager.id + "-hallOrderManager.log"
+	file, _ := os.Create(filepath)
+	manager.logger = log.New(file, "", log.Ltime|log.Lmicroseconds)
+
 	return manager
 }
 
@@ -100,6 +108,7 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 		OrderID: order.ID,
 		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
+	manager.logger.Printf("New order ID%v: %#v", order.ID, order)
 	manager.requestToNetwork <- orderToNet
 }
 
@@ -107,6 +116,8 @@ func handleReplyFromNetwork(reply msg.OrderStamped, manager *HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, reply.OrderID)
 	if valid && order.State == msg.Received {
 		order.Costs[reply.ID] = reply.Order.Cost
+		manager.orders.update(order)
+		manager.logger.Printf("New reply to order ID%v: %#v", order.ID, order)
 	}
 }
 
@@ -118,6 +129,7 @@ func handleConfirmationFromNetwork(confirm msg.OrderStamped, manager *HallOrderM
 
 		manager.orders.update(order)
 
+		manager.logger.Printf("Confirmed ID%v: %#v", order.ID, order)
 		//Let the elevators on the network know that this local elevator has taken an order
 		orderStateBroadcast(order, manager)
 	}
@@ -132,6 +144,8 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 		Dir:           delegation.Order.Dir}
 
 	manager.orders.update(order)
+	manager.logger.Printf("Received order from net: %#v", order)
+
 	reply := msg.OrderStamped{
 		ID:      order.OwnerID,
 		OrderID: order.ID,
@@ -143,6 +157,7 @@ func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager)
 	// Receive an order from the network and add it to the list of hall orders
 	if order.OwnerID != manager.id {
 		manager.orders.update(order)
+		manager.logger.Printf("Sync from net: %#v", order)
 	}
 }
 
@@ -157,12 +172,14 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 
 		if id == manager.id {
 			//send order to local elevator
-			fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
+			//fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
 
+			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
 			order.State = msg.Serving
 			orderStateBroadcast(order, manager)
 		} else {
-			fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
+			manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
+			//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
 			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
 
 			order.State = msg.Delegate
@@ -185,7 +202,8 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 		order.DelegatedToID = manager.id
 		order.State = msg.Serving
 
-		fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
+		//fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
+		manager.logger.Printf("Timeout delegation ID%v, sending to local elevator: %v", order.ID, order)
 
 		manager.orders.update(order)
 		orderStateBroadcast(order, manager)
@@ -195,5 +213,6 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 	// A message should be put on the other end of this channel whenever a local order is received
 	// NOTE!!!!!!!!!! Should also be synced when an order is done!!!!
-	manager.orderSyncToNetwork <- order
+	//manager.orderSyncToNetwork <- order
+	//manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
 }

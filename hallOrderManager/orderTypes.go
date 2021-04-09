@@ -1,6 +1,7 @@
 package hallOrderManager
 
 import (
+	"log"
 	"time"
 
 	"../localOrderDelegation"
@@ -30,4 +31,6 @@ type HallOrderManager struct {
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int
+
+	logger *log.Logger
 }

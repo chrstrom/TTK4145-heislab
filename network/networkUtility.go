@@ -22,19 +22,19 @@ func GetNodeID() string {
 func CreateNetworkChannelStruct() types.NetworkChannels {
 	var networkChannels types.NetworkChannels
 
-	networkChannels.RequestToNetwork 				= make(chan types.OrderStamped)
-	networkChannels.DelegateOrderToNetwork 			= make(chan types.OrderStamped)
-	networkChannels.RequestReplyToNetwork 			= make(chan types.OrderStamped)
-	networkChannels.DelegationConfirmToNetwork 		= make(chan types.OrderStamped)
-	networkChannels.OrderCompleteToNetwork 			= make(chan types.OrderStamped)
-	networkChannels.SyncOrderToNetwork				= make(chan types.HallOrder)
+	networkChannels.RequestToNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.DelegateOrderToNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.RequestReplyToNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.DelegationConfirmToNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.OrderCompleteToNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.SyncOrderToNetwork = make(chan types.HallOrder, 10)
 
-	networkChannels.RequestFromNetwork 				= make(chan types.OrderStamped)
-	networkChannels.DelegateFromNetwork 			= make(chan	types.OrderStamped)
-	networkChannels.RequestReplyFromNetwork 		= make(chan types.OrderStamped)
-	networkChannels.DelegationConfirmFromNetwork 	= make(chan types.OrderStamped)
-	networkChannels.OrderCompleteFromNetwork 		= make(chan types.OrderStamped)
-	networkChannels.SyncOrderFromNetwork			= make(chan types.HallOrder)
+	networkChannels.RequestFromNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.DelegateFromNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.RequestReplyFromNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.OrderCompleteFromNetwork = make(chan types.OrderStamped, 10)
+	networkChannels.SyncOrderFromNetwork = make(chan types.HallOrder, 10)
 
 	return networkChannels
 }

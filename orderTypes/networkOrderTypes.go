@@ -7,6 +7,13 @@ type NetworkOrder struct {
 	Order      OrderStamped
 }
 
+type NetworkHallOrder struct {
+	SenderID   string
+	MessageID  int
+	ReceiverID string
+	Order      HallOrder
+}
+
 type NetworkChannels struct {
 	RequestToNetwork           chan OrderStamped
 	DelegateOrderToNetwork     chan OrderStamped

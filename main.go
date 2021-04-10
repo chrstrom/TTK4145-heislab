@@ -5,8 +5,8 @@ import (
 	"time"
 
 	io "./elevio"
-	"./fsm"
 	"./hallOrderManager"
+	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
 	"./mock"
 	"./network"
@@ -16,7 +16,7 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	//testOrderManager()
+	testOrderManager()
 
 	numFloors := 4
 	io.Init("localhost:15657", numFloors)
@@ -44,6 +44,7 @@ func main() {
 	go network.NetworkNode(id, networkChannels)
 
 	// Elevator //
+	go localOrderDelegation.OrderDelegator(drv_buttons, hallOrderChannel)
 	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
 	go fsm.RunElevatorFSM(drv_buttons, drv_floors, drv_obstr, drv_stop, timer_ch)
 

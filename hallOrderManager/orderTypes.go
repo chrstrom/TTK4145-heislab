@@ -4,27 +4,11 @@ import (
 	"time"
 
 	"../localOrderDelegation"
-	"../network"
+	msg "../orderTypes"
 )
 
-type OrderStateType int
-
-const (
-	Received OrderStateType = iota
-	Delegate
-	Serving
-)
 const orderReplyTime = time.Millisecond * 50
-const orderDelegationTime = time.Millisecond * 50
-
-type Order struct {
-	OwnerID       string
-	ID            int
-	DelegatedToID string
-	State         OrderStateType
-	Floor, Dir    int
-	costs         map[string]int
-}
+const orderDelegationTime = time.Millisecond * 500
 
 type HallOrderManager struct {
 	id string
@@ -34,13 +18,15 @@ type HallOrderManager struct {
 
 	localRequestChannel <-chan localOrderDelegation.LocalOrder
 
-	requestToNetwork           chan<- network.NewRequest
-	delegateToNetwork          chan<- network.Delegation
-	delegationConfirmToNetwork chan<- network.DelegationConfirm
+	requestToNetwork           chan<- msg.OrderStamped
+	delegationConfirmToNetwork chan<- msg.OrderStamped
+	delegateToNetwork          chan<- msg.OrderStamped
+	orderSyncToNetwork         chan<- msg.HallOrder
 
-	requestReplyFromNetwork           <-chan network.RequestReply
-	orderDelegationConfirmFromNetwork <-chan network.DelegationConfirm
-	delegationFromNetwork             <-chan network.Delegation
+	requestReplyFromNetwork           <-chan msg.OrderStamped
+	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped
+	delegationFromNetwork             <-chan msg.OrderStamped
+	orderSyncFromNetwork              <-chan msg.HallOrder
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

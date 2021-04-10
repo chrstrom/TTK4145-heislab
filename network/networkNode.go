@@ -24,7 +24,7 @@ type Node struct {
 	delegateOrderChannelTx, delegateOrderChannelRx               chan msg.NetworkOrder
 	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan msg.NetworkOrder
 	orderCompleteChannelTx, orderCompleteChannelRx               chan msg.NetworkOrder
-	orderSyncChannelTx, orderSyncChannelRx                       chan msg.HallOrder
+	orderSyncChannelTx, orderSyncChannelRx                       chan msg.NetworkHallOrder
 
 	receivedMessages map[string][]int
 }
@@ -110,10 +110,14 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 
 		case order := <-node.networkChannels.SyncOrderToNetwork:
 
+			syncOrder := msg.NetworkHallOrder {
+				SenderID:	node.id,
+				MessageID:	node.messageIDCounter,
+				Order:		order}
 			node.messageIDCounter++
 
 			for i := 0; i < duplicatesOfMessages; i++ {
-				node.orderSyncChannelTx <- order
+				node.orderSyncChannelTx <- syncOrder
 			}
 
 			// Channels from the network to the hall order manager
@@ -218,9 +222,21 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				// Send message on channel
 			}
 
-		case order := <-node.orderSyncChannelRx:
-			node.networkChannels.SyncOrderFromNetwork <- order
+		case sync := <-node.orderSyncChannelRx:
+			if sync.SenderID != node.id &&
+				shouldThisMessageBeProcessed(
+					node.receivedMessages,
+					sync.SenderID,
+					sync.MessageID) {
 
+				addMessageIDToReceivedMessageMap(
+					node.receivedMessages,
+					sync.SenderID,
+					sync.MessageID)
+
+				node.networkChannels.SyncOrderFromNetwork <- sync.Order
+
+			}
 		}
 	}
 }
@@ -254,8 +270,8 @@ func initializeNetworkNode(id string, channels msg.NetworkChannels) Node {
 	node.orderCompleteChannelTx = make(chan msg.NetworkOrder)
 	node.orderCompleteChannelRx = make(chan msg.NetworkOrder)
 
-	node.orderSyncChannelTx = make(chan msg.HallOrder)
-	node.orderSyncChannelRx = make(chan msg.HallOrder)
+	node.orderSyncChannelTx = make(chan msg.NetworkHallOrder)
+	node.orderSyncChannelRx = make(chan msg.NetworkHallOrder)
 
 	go bcast.Transmitter(25373, node.newRequestChannelTx)
 	go bcast.Receiver(25373, node.newRequestChannelRx)

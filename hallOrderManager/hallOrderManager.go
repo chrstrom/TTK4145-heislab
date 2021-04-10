@@ -22,7 +22,7 @@ func OrderManager(
 		case request := <-manager.localRequestChannel:
 			handleLocalRequest(request, &manager)
 
-		case reply := <-manager.requestReplyFromNetwork:
+		case reply := <-manager.replyToRequestFromNetwork:
 			handleReplyFromNetwork(reply, &manager)
 
 		case confirm := <-manager.orderDelegationConfirmFromNetwork:
@@ -65,10 +65,9 @@ func initializeManager(
 	manager.orderSyncToNetwork = channels.SyncOrderToNetwork
 	manager.delegationConfirmToNetwork = channels.DelegationConfirmToNetwork
 
-	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
+	manager.replyToRequestFromNetwork = channels.ReplyToRequestFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
-	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
 

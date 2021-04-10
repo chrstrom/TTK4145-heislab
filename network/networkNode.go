@@ -22,7 +22,7 @@ type Node struct {
 	peerUpdateChannel                                            chan peers.PeerUpdate
 	peerTxEnable                                                 chan bool
 	newRequestChannelTx, newRequestChannelRx                     chan msg.NetworkOrder
-	newRequestReplyChannelTx, newRequestReplyChannelRx           chan msg.NetworkOrder
+	newReplyToRequestChannelTx, newReplyToRequestChannelRx       chan msg.NetworkOrder
 	delegateOrderChannelTx, delegateOrderChannelRx               chan msg.NetworkOrder
 	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan msg.NetworkOrder
 	orderCompleteChannelTx, orderCompleteChannelRx               chan msg.NetworkOrder
@@ -55,7 +55,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				node.newRequestChannelTx <- newRequest
 			}
 
-		case reply := <-node.networkChannels.RequestReplyToNetwork:
+		case reply := <-node.networkChannels.ReplyToRequestToNetwork:
 
 			newReplyToRequest := msg.NetworkOrder{
 				SenderID:   node.id,
@@ -67,7 +67,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 
 			node.loggerOutgoing.Printf("Reply to request: %#v", newReplyToRequest)
 			for i := 0; i < duplicatesOfMessages; i++ {
-				node.newRequestReplyChannelTx <- newReplyToRequest
+				node.newReplyToRequestChannelTx <- newReplyToRequest
 			}
 
 		case delegation := <-node.networkChannels.DelegateOrderToNetwork:
@@ -152,7 +152,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				node.networkChannels.RequestFromNetwork <- message
 			}
 
-		case replyToRequest := <-node.newRequestReplyChannelRx:
+		case replyToRequest := <-node.newReplyToRequestChannelRx:
 			if replyToRequest.ReceiverID == node.id &&
 				shouldThisMessageBeProcessed(
 					node.receivedMessages,
@@ -163,14 +163,14 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					node.receivedMessages,
 					replyToRequest.SenderID,
 					replyToRequest.MessageID)
-				//fmt.Printf("%#v \n", requestReply)
+				//fmt.Printf("%#v \n", replyToRequest)
 				node.loggerIncoming.Printf("Reply to request ID%v: %#v", replyToRequest.Order.OrderID, replyToRequest)
 				message := msg.OrderStamped{
 					ID:      replyToRequest.SenderID,
 					OrderID: replyToRequest.Order.OrderID,
 					Order:   replyToRequest.Order.Order}
 
-				node.networkChannels.RequestReplyFromNetwork <- message
+				node.networkChannels.ReplyToRequestFromNetwork <- message
 			}
 
 		case delegation := <-node.delegateOrderChannelRx:
@@ -270,8 +270,8 @@ func initializeNetworkNode(id string, channels msg.NetworkChannels) Node {
 	node.newRequestChannelTx = make(chan msg.NetworkOrder)
 	node.newRequestChannelRx = make(chan msg.NetworkOrder)
 
-	node.newRequestReplyChannelTx = make(chan msg.NetworkOrder)
-	node.newRequestReplyChannelRx = make(chan msg.NetworkOrder)
+	node.newReplyToRequestChannelTx = make(chan msg.NetworkOrder)
+	node.newReplyToRequestChannelRx = make(chan msg.NetworkOrder)
 
 	node.delegateOrderChannelTx = make(chan msg.NetworkOrder)
 	node.delegateOrderChannelRx = make(chan msg.NetworkOrder)
@@ -288,8 +288,8 @@ func initializeNetworkNode(id string, channels msg.NetworkChannels) Node {
 	go bcast.Transmitter(25373, node.newRequestChannelTx)
 	go bcast.Receiver(25373, node.newRequestChannelRx)
 
-	go bcast.Transmitter(25374, node.newRequestReplyChannelTx)
-	go bcast.Receiver(25374, node.newRequestReplyChannelRx)
+	go bcast.Transmitter(25374, node.newReplyToRequestChannelTx)
+	go bcast.Receiver(25374, node.newReplyToRequestChannelRx)
 
 	go bcast.Transmitter(25375, node.delegateOrderChannelTx)
 	go bcast.Receiver(25375, node.delegateOrderChannelRx)

@@ -119,10 +119,10 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 
 		case order := <-node.networkChannels.SyncOrderToNetwork:
 
-			syncOrder := msg.NetworkHallOrder {
-				SenderID:	node.id,
-				MessageID:	node.messageIDCounter,
-				Order:		order}
+			syncOrder := msg.NetworkHallOrder{
+				SenderID:  node.id,
+				MessageID: node.messageIDCounter,
+				Order:     order}
 			node.messageIDCounter++
 
 			node.loggerOutgoing.Printf("Sync order ID%v: %#v", order.ID, order)
@@ -244,7 +244,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					sync.SenderID,
 					sync.MessageID)
 
-        node.loggerIncoming.Printf("Sync order: %#v", order)
+				node.loggerIncoming.Printf("Sync order: %#v", sync)
 				node.networkChannels.SyncOrderFromNetwork <- sync.Order
 
 			}

@@ -3,21 +3,23 @@ package hallOrderManager
 import (
 	"fmt"
 	"sort"
+
+	msg "../orderTypes"
 )
 
-type OrderMap map[string]map[int]Order
+type OrderMap map[string]map[int]msg.HallOrder
 
-func (om OrderMap) update(order Order) {
+func (om OrderMap) update(order msg.HallOrder) {
 	_, ok := om[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]Order)
+		om[order.OwnerID] = make(map[int]msg.HallOrder)
 	}
 	om[order.OwnerID][order.ID] = order
 
 	om.printOrderMap()
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found bool) {
+func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
 	_, ok := om[ownerID]
 	if ok {
 		o, ok2 := om[ownerID][orderID]
@@ -25,7 +27,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found boo
 			return o, true
 		}
 	}
-	return Order{}, false
+	return msg.HallOrder{}, false
 }
 
 func (om OrderMap) printOrderMap() {
@@ -35,36 +37,40 @@ func (om OrderMap) printOrderMap() {
 	cmd.Run()*/
 
 	fmt.Println("********************************OrderMap********************************")
-	nodeids := make([]string, 0, len(om))
-	var orders [][]int
+	orders := []struct {
+		nodeid  string
+		orderid []int
+	}{}
 	i := 0
 	for id, omap := range om {
-		nodeids = append(nodeids, id)
-		orders = append(orders, []int{})
+		orders = append(orders, struct {
+			nodeid  string
+			orderid []int
+		}{id, []int{}})
 		for oid, _ := range omap {
-			orders[i] = append(orders[i], oid)
+			orders[i].orderid = append(orders[i].orderid, oid)
 		}
-		sort.Ints(orders[i])
+		sort.Ints(orders[i].orderid)
 		i++
 	}
-	sort.Strings(nodeids)
+	sort.Slice(orders, func(i, j int) bool { return orders[i].nodeid < orders[j].nodeid })
 	i = 0
-	for _, id := range nodeids {
-		fmt.Printf("Node: %s \n", id)
+	for _, node := range orders {
+		fmt.Printf("Node: %s \n", node.nodeid)
 		fmt.Println("Order id    State        Delegated to          Floor    Direction")
 
-		for _, oid := range orders[i] {
-			o := om[id][oid]
+		for _, oid := range node.orderid {
+			o := om[node.nodeid][oid]
 			state := ""
 			switch o.State {
-			case Received:
+			case msg.Received:
 				state = "Received"
-			case Delegate:
+			case msg.Delegate:
 				state = "Delegate"
-			case Serving:
+			case msg.Serving:
 				state = "serving"
 			}
-			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
+			fmt.Printf("%-11v %-12v %-21s %-8v %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
 		}
 		i++
 		fmt.Printf("\n\n")

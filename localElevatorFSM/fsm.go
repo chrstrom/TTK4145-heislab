@@ -6,6 +6,7 @@ import (
 
 	"../cabOrderStorage"
 	io "../elevio"
+	types "../orderTypes"
 	"../timer"
 )
 
@@ -26,6 +27,17 @@ import (
 var elevator = makeUninitializedElevator()
 var elevatorSimulator = makeUninitializedElevator()
 var cost = 0
+
+func CreateFSMChannelStruct() types.FSMChannels {
+	var fsmChannels types.FSMChannels
+
+	fsmChannels.DelegateHallOrder = make(chan io.ButtonEvent)
+	fsmChannels.Cost = make(chan int)
+	fsmChannels.RequestCost = make(chan io.ButtonEvent)
+	fsmChannels.OrderComplete = make(chan io.ButtonEvent)
+
+	return fsmChannels
+}
 
 func makeUninitializedElevator() Elevator {
 	elevator := new(Elevator)
@@ -150,10 +162,7 @@ func doorOpenTimer() {
 // as a goroutine. Because of this, it should take inputs based on
 // channels, and the for-select will take care of the
 func RunElevatorFSM(event_cabOrder <-chan int,
-	event_costRequested <-chan io.ButtonEvent,
-	costChannel chan<- int,
-	event_delegatedHallOrder <-chan io.ButtonEvent,
-	orderCompleteChannel chan<- io.ButtonEvent,
+	fsmChannels types.FSMChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
@@ -185,18 +194,18 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			fmt.Printf("%+v\n", cabOrder)
 			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab})
 
-		case costRequested := <-event_costRequested:
+		case costRequested := <-fsmChannels.RequestCost:
 			elevatorSimulator = elevator
 			cost = timeToIdle(elevatorSimulator, costRequested.Floor, int(costRequested.Button))
-			costChannel <- cost
+			fsmChannels.Cost <- cost
 
-		case delegatedHallOrder := <-event_delegatedHallOrder:
+		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
 			fmt.Printf("Hallorder recieved!\n")
 			onRequestButtonPress(delegatedHallOrder)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)
-			onFloorArrival(newFloor, orderCompleteChannel)
+			onFloorArrival(newFloor, fsmChannels.OrderComplete)
 
 		case obstruction := <-event_obstruction:
 			if obstruction {

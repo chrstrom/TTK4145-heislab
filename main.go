@@ -5,8 +5,8 @@ import (
 	"time"
 
 	io "./elevio"
-	"./fsm"
 	"./hallOrderManager"
+	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
 	"./mock"
 	"./network"
@@ -32,10 +32,11 @@ func main() {
 	networkChannels := network.CreateNetworkChannelStruct()
 	cabOrderChannel := make(chan int)
 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-	delegateHallOrderChannel := make(chan io.ButtonEvent)
-	costChannel := make(chan int)
-	requestCostChannel := make(chan io.ButtonEvent)
-	orderCompleteChannel := make(chan io.ButtonEvent)
+	fsmChannels := fsm.CreateFSMChannelStruct()
+	//delegateHallOrderChannel := make(chan io.ButtonEvent)
+	//costChannel := make(chan int)
+	//requestCostChannel := make(chan io.ButtonEvent)
+	//orderCompleteChannel := make(chan io.ButtonEvent)
 
 	// IO //
 	go io.PollButtons(drv_buttons)
@@ -48,11 +49,9 @@ func main() {
 	go network.NetworkNode(id, networkChannels)
 
 	// Elevator //
-	var localOrderDelegator localOrderDelegation.LocalOrderDelegator
-	localOrderDelegator.Init(drv_buttons, cabOrderChannel, hallOrderChannel)
-	go localOrderDelegator.LocalOrderDelegation()
-	go hallOrderManager.OrderManager(id, hallOrderChannel, delegateHallOrderChannel, requestCostChannel, costChannel, orderCompleteChannel, networkChannels)
-	go fsm.RunElevatorFSM(cabOrderChannel, requestCostChannel, costChannel, delegateHallOrderChannel, orderCompleteChannel, drv_floors, drv_obstr, drv_stop, timer_ch)
+	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
+	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
+	go fsm.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
 
 	for {
 	}
@@ -62,23 +61,24 @@ func main() {
 func testOrderManager() {
 	// Order Manager Channels //
 	networkChannels := network.CreateNetworkChannelStruct()
-	//cabOrderChannel  := make(chan int)
+	//cabOrderChannel := make(chan int)
 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-	delegateHallOrderChannel := make(chan io.ButtonEvent)
-	costChannel := make(chan int)
-	requestCostChannel := make(chan io.ButtonEvent)
-	orderCompleteChannel := make(chan io.ButtonEvent)
+	fsmChannels := fsm.CreateFSMChannelStruct()
+	// delegateHallOrderChannel := make(chan io.ButtonEvent)
+	// costChannel := make(chan int)
+	// requestCostChannel := make(chan io.ButtonEvent)
+	// orderCompleteChannel := make(chan io.ButtonEvent)
 
 	// Network //
 	id := network.GetNodeID()
 	go network.NetworkNode(id, networkChannels)
 
 	// Elevator //
-	go hallOrderManager.OrderManager(id, hallOrderChannel, delegateHallOrderChannel, requestCostChannel, costChannel, orderCompleteChannel, networkChannels)
+	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 
 	// /** 	mock functions for testing 		**/
-	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.RequestReplyToNetwork)
-	go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
+	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
+	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}
 	for {

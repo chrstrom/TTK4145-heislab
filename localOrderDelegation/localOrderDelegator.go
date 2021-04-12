@@ -6,23 +6,27 @@ import (
 	"../elevio"
 )
 
-type LocalOrder struct {
-	Floor, Dir int
-}
+func initializeDelegator(
+	buttonCh <-chan elevio.ButtonEvent,
+	cabOrderCh chan<- int,
+	hallOrderCh chan<- LocalOrder) Delegator {
 
-type LocalOrderDelegator struct {
-	buttonInputChannel <-chan elevio.ButtonEvent
-	cabOrderChannel    chan<- int
-	hallOrderChannel   chan<- LocalOrder
-}
+	var delegator Delegator
 
-func (delegator *LocalOrderDelegator) Init(buttonCh <-chan elevio.ButtonEvent, cabOrderCh chan<- int, hallOrderCh chan<- LocalOrder) {
 	delegator.buttonInputChannel = buttonCh
 	delegator.cabOrderChannel = cabOrderCh
 	delegator.hallOrderChannel = hallOrderCh
+
+	return delegator
 }
 
-func (delegator *LocalOrderDelegator) LocalOrderDelegation() {
+func OrderDelegator(
+	buttonCh <-chan elevio.ButtonEvent,
+	cabOrderCh chan<- int,
+	hallOrderCh chan<- LocalOrder) {
+
+	delegator := initializeDelegator(buttonCh, cabOrderCh, hallOrderCh)
+
 	for {
 		select {
 		case buttonEvent := <-delegator.buttonInputChannel:

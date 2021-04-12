@@ -7,6 +7,7 @@ import (
 const N_FLOORS = 4
 const N_BUTTONS = 3
 
+//Not final values, only for efficient testing
 const DOOR_OPEN_DURATION = 2
 const TRAVEL_TIME = 1
 

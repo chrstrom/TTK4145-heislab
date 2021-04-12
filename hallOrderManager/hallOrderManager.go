@@ -2,21 +2,61 @@ package hallOrderManager
 
 import (
 	"fmt"
+	"log"
+	"os"
 
 	"../elevio"
 	"../localOrderDelegation"
-	"../network"
+	msg "../orderTypes"
 	"../timer"
 )
+
+func OrderManager(
+	id string,
+	localRequestCh <-chan localOrderDelegation.LocalOrder,
+	fsmChannels msg.FSMChannels,
+	channels msg.NetworkChannels) {
+
+	manager := initializeManager(id, localRequestCh, fsmChannels, channels)
+
+	for {
+		select {
+		case request := <-manager.localRequestChannel:
+			handleLocalRequest(request, &manager)
+		case orderComplete := <-manager.orderComplete:
+			//Get orders at the same floor from ordermap
+			//Send confirmation to network
+			fmt.Printf("Order %v completed\n", orderComplete)
+
+		case reply := <-manager.replyToRequestFromNetwork:
+			handleReplyFromNetwork(reply, &manager)
+
+		case confirm := <-manager.orderDelegationConfirmFromNetwork:
+			handleConfirmationFromNetwork(confirm, &manager)
+
+		case delegation := <-manager.delegationFromNetwork:
+			acceptDelegatedHallOrder(delegation, &manager)
+
+		case order := <-manager.orderSyncFromNetwork:
+			synchronizeOrderFromNetwork(order, &manager)
+
+		case orderID := <-manager.orderReplyTimeoutChannel:
+			delegateHallOrder(orderID, &manager)
+
+		case orderID := <-manager.orderDelegationTimeoutChannel:
+			selfServeHallOrder(orderID, &manager)
+
+			//case <-time.After(time.Second * 5):
+			//	manager.logger.Printf("Quiet for 5 seconds")
+		}
+	}
+}
 
 func initializeManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
-	delegateHallOrderCh chan<- elevio.ButtonEvent,
-	requestElevatorCostCh chan<- elevio.ButtonEvent,
-	elevatorCostCh <-chan int,
-	orderCompleteCh <-chan elevio.ButtonEvent,
-	channels network.NetworkChannels) HallOrderManager {
+	fsmChannels msg.FSMChannels,
+	channels msg.NetworkChannels) HallOrderManager {
 
 	var manager HallOrderManager
 
@@ -26,131 +66,167 @@ func initializeManager(
 	manager.orderIDCounter = 1
 
 	manager.localRequestChannel = localRequestCh
+
 	manager.requestToNetwork = channels.RequestToNetwork
 	manager.delegateToNetwork = channels.DelegateOrderToNetwork
+	manager.orderSyncToNetwork = channels.SyncOrderToNetwork
 	manager.delegationConfirmToNetwork = channels.DelegationConfirmToNetwork
-	manager.requestReplyFromNetwork = channels.RequestReplyFromNetwork
+
+	manager.replyToRequestFromNetwork = channels.ReplyToRequestFromNetwork
+	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
+	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
 
-	manager.delegateToLocalElevator = delegateHallOrderCh
-	manager.elevatorCost = elevatorCostCh
-	manager.requestElevatorCost = requestElevatorCostCh
-	manager.orderComplete = orderCompleteCh
+	manager.delegateToLocalElevator = fsmChannels.DelegateHallOrder
+	manager.elevatorCost = fsmChannels.Cost
+	manager.requestElevatorCost = fsmChannels.RequestCost
+	manager.orderComplete = fsmChannels.OrderComplete
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
 
+	filepath := "log/" + manager.id + "-hallOrderManager.log"
+	file, _ := os.Create(filepath)
+	manager.logger = log.New(file, "", log.Ltime|log.Lmicroseconds)
+
 	return manager
 }
 
-func OrderManager(
-	id string,
-	localRequestCh <-chan localOrderDelegation.LocalOrder,
-	delegateHallOrderCh chan<- elevio.ButtonEvent,
-	requestElevatorCostCh chan<- elevio.ButtonEvent,
-	elevatorCostCh <-chan int,
-	orderCompleteCh <-chan elevio.ButtonEvent,
-	channels network.NetworkChannels) {
+func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOrderManager) {
+	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
 
-	manager := initializeManager(id, localRequestCh, delegateHallOrderCh, requestElevatorCostCh, elevatorCostCh, orderCompleteCh, channels)
+	// This order will get synced with every elevator on the network
+	order := msg.HallOrder{
+		OwnerID: manager.id,
+		ID:      manager.orderIDCounter,
+		State:   msg.Received,
+		Floor:   request.Floor,
+		Dir:     request.Dir}
 
-	for {
-		select {
-		case request := <-manager.localRequestChannel:
-			//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
-			order := Order{OwnerID: manager.id,
-				ID:    manager.orderIDCounter,
-				State: Received,
-				Floor: request.Floor,
-				Dir:   request.Dir}
-			manager.orderIDCounter++
-			order.costs = make(map[string]int)
+	manager.orderIDCounter++
+	order.Costs = make(map[string]int)
 
-			//get local elevator cost in some way
-			manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
-			order.costs[manager.id] = <-manager.elevatorCost
-			fmt.Printf("Cost:%v\n", order.costs[manager.id])
-			//order.costs[manager.id] = rand.Intn(1000)
+	//get local elevator cost in some way
+	manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+	order.Costs[manager.id] = <-manager.elevatorCost
+	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
+	//order.Costs[manager.id] = rand.Intn(1000)
 
-			manager.orders.update(order)
-			//fmt.Printf("%v - local request received \n", order.ID)
+	manager.orders.update(order)
 
-			timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
+	//fmt.Printf("%v - local request received \n", order.ID)
+	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 
-			orderToNet := network.NewRequest{OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
-			manager.requestToNetwork <- orderToNet
+	orderToNet := msg.OrderStamped{
+		OrderID: order.ID,
+		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
-		case orderComplete := <-manager.orderComplete:
-			//Get orders at the same floor from ordermap
-			//Send confirmation to network
-			fmt.Printf("Order %v completed\n", orderComplete)
+	manager.logger.Printf("New order ID%v: %#v", order.ID, order)
+	manager.requestToNetwork <- orderToNet
+}
 
-		case reply := <-manager.requestReplyFromNetwork:
-			o, valid := manager.orders.getOrder(manager.id, reply.OrderID)
-			if valid && o.State == Received {
-				o.costs[reply.ID] = reply.Cost
-			}
-
-		case orderID := <-manager.orderReplyTimeoutChannel:
-			o, valid := manager.orders.getOrder(manager.id, orderID)
-			if valid && o.State == Received {
-				id := getIDOfLowestCost(o.costs)
-				if id == "" {
-					id = manager.id
-				}
-				o.DelegatedToID = id
-
-				if id == manager.id {
-					//send order to local elevator
-					fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(o.costs))
-					manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: o.Floor, Button: elevio.ButtonType(o.Dir)}
-
-					o.State = Serving
-				} else {
-					//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(o.costs))
-					timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
-
-					o.State = Delegate
-
-					message := network.Delegation{ID: o.DelegatedToID, OrderID: orderID, Floor: o.Floor, Dir: o.Dir}
-					manager.delegateToNetwork <- message
-				}
-				manager.orders.update(o)
-			}
-
-		case delegation := <-manager.delegationFromNetwork:
-			order := Order{OwnerID: delegation.ID,
-				ID:            delegation.OrderID,
-				DelegatedToID: manager.id,
-				State:         Serving,
-				Floor:         delegation.Floor,
-				Dir:           delegation.Dir}
-			manager.orders.update(order)
-			reply := network.DelegationConfirm{ID: order.OwnerID, OrderID: order.ID, Floor: order.Floor, Dir: order.Dir}
-			manager.delegationConfirmToNetwork <- reply
-
-		case confirm := <-manager.orderDelegationConfirmFromNetwork:
-			o, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
-			if valid && o.State == Delegate {
-				o.State = Serving
-				//fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
-
-				manager.orders.update(o)
-			}
-
-		case orderID := <-manager.orderDelegationTimeoutChannel:
-			o, valid := manager.orders.getOrder(manager.id, orderID)
-			if valid && o.State == Delegate {
-				//Send order to local elevator
-				o.DelegatedToID = manager.id
-				o.State = Serving
-				manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: o.Floor, Button: elevio.ButtonType(o.Dir)}
-
-				//fmt.Printf("%v - delegation timedout! Sending to local elevator \n", orderID)
-
-				manager.orders.update(o)
-			}
-		}
+func handleReplyFromNetwork(reply msg.OrderStamped, manager *HallOrderManager) {
+	order, valid := manager.orders.getOrder(manager.id, reply.OrderID)
+	if valid && order.State == msg.Received {
+		order.Costs[reply.ID] = reply.Order.Cost
+		manager.orders.update(order)
+		manager.logger.Printf("New reply to order ID%v: %#v", order.ID, order)
 	}
+}
+
+func handleConfirmationFromNetwork(confirm msg.OrderStamped, manager *HallOrderManager) {
+	order, valid := manager.orders.getOrder(manager.id, confirm.OrderID)
+	if valid && order.State == msg.Delegate {
+		order.State = msg.Serving
+		//fmt.Printf("%v - delegation confirmed \n", confirm.OrderID)
+
+		manager.orders.update(order)
+
+		manager.logger.Printf("Confirmed ID%v: %#v", order.ID, order)
+		//Let the elevators on the network know that this local elevator has taken an order
+		orderStateBroadcast(order, manager)
+	}
+}
+
+func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderManager) {
+	order := msg.HallOrder{OwnerID: delegation.ID,
+		ID:            delegation.OrderID,
+		DelegatedToID: manager.id,
+		State:         msg.Serving,
+		Floor:         delegation.Order.Floor,
+		Dir:           delegation.Order.Dir}
+
+	manager.orders.update(order)
+	manager.logger.Printf("Received order from net: %#v", order)
+
+	reply := msg.OrderStamped{
+		ID:      order.OwnerID,
+		OrderID: order.ID,
+		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+	manager.delegationConfirmToNetwork <- reply
+}
+
+func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
+	// Receive an order from the network and add it to the list of hall orders
+	if order.OwnerID != manager.id {
+		manager.orders.update(order)
+		manager.logger.Printf("Sync from net: %#v", order)
+	}
+}
+
+func delegateHallOrder(orderID int, manager *HallOrderManager) {
+	order, valid := manager.orders.getOrder(manager.id, orderID)
+	if valid && order.State == msg.Received {
+		id := getIDOfLowestCost(order.Costs)
+		if id == "" {
+			id = manager.id
+		}
+		order.DelegatedToID = id
+
+		if id == manager.id {
+			//send order to local elevator
+			manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+			fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
+
+			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
+			order.State = msg.Serving
+			orderStateBroadcast(order, manager)
+		} else {
+			manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
+			//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
+			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
+
+			order.State = msg.Delegate
+
+			message := msg.OrderStamped{
+				ID:      order.DelegatedToID,
+				OrderID: orderID,
+				Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+
+			manager.delegateToNetwork <- message
+		}
+		manager.orders.update(order)
+	}
+}
+
+func selfServeHallOrder(orderID int, manager *HallOrderManager) {
+	order, valid := manager.orders.getOrder(manager.id, orderID)
+	if valid && order.State == msg.Delegate {
+		//Send order to local elevator
+		manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+		order.DelegatedToID = manager.id
+		order.State = msg.Serving
+
+		//fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
+		manager.logger.Printf("Timeout delegation ID%v, sending to local elevator: %v", order.ID, order)
+
+		manager.orders.update(order)
+		orderStateBroadcast(order, manager)
+	}
+}
+
+func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
+	manager.orderSyncToNetwork <- order
+	manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
 }

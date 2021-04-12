@@ -24,6 +24,8 @@ import (
 // The for-select block in RunElevatorFSM() will at all times only execute
 // one case, which means that we will not run into concurrency problems here either
 var elevator = makeUninitializedElevator()
+var elevatorSimulator = makeUninitializedElevator()
+var cost = 0
 
 func makeUninitializedElevator() Elevator {
 	elevator := new(Elevator)
@@ -69,7 +71,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 			elevator.state = DoorOpen
 		} else {
 			elevator.requests[button_floor][button_type] = true
-			elevator.direction = chooseDirection()
+			elevator.direction = chooseDirection(elevator)
 			io.SetMotorDirection(elevator.direction)
 			elevator.state = Moving
 		}
@@ -78,7 +80,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 	setAllLights()
 }
 
-func onFloorArrival(floor int) {
+func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
 	elevator.floor = floor
 
 	// Set floor light
@@ -88,9 +90,9 @@ func onFloorArrival(floor int) {
 
 	case Moving:
 
-		if shouldStop() {
+		if shouldStop(elevator) {
 			io.SetMotorDirection(io.MD_Stop)
-			clearRequestAtFloor()
+			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
 
 			doorOpenTimer()
 
@@ -105,7 +107,7 @@ func onFloorArrival(floor int) {
 func onDoorTimeout() {
 	if elevator.state == DoorOpen && !elevator.obstruction {
 		io.SetDoorOpenLamp(false)
-		elevator.direction = chooseDirection()
+		elevator.direction = chooseDirection(elevator)
 		io.SetMotorDirection(elevator.direction)
 
 		if elevator.direction == io.MD_Stop {
@@ -139,7 +141,7 @@ func setAllLights() {
 }
 
 func doorOpenTimer() {
-	const doorOpenTime = time.Millisecond * 2000
+	const doorOpenTime = time.Second * DOOR_OPEN_DURATION
 	io.SetDoorOpenLamp(true)
 	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
 }
@@ -148,7 +150,10 @@ func doorOpenTimer() {
 // as a goroutine. Because of this, it should take inputs based on
 // channels, and the for-select will take care of the
 func RunElevatorFSM(event_cabOrder <-chan int,
-	event_hallOrder <-chan io.ButtonEvent,
+	event_costRequested <-chan io.ButtonEvent,
+	costChannel chan<- int,
+	event_delegatedHallOrder <-chan io.ButtonEvent,
+	orderCompleteChannel chan<- io.ButtonEvent,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
@@ -178,15 +183,20 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 		case cabOrder := <-event_cabOrder:
 			fmt.Printf("%+v\n", cabOrder)
-			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.ButtonType(N_BUTTONS - 1)})
+			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab})
 
-		case hallOrder := <-event_hallOrder:
+		case costRequested := <-event_costRequested:
+			elevatorSimulator = elevator
+			cost = timeToIdle(elevatorSimulator, costRequested.Floor, int(costRequested.Button))
+			costChannel <- cost
+
+		case delegatedHallOrder := <-event_delegatedHallOrder:
 			fmt.Printf("Hallorder recieved!\n")
-			onRequestButtonPress(hallOrder)
+			onRequestButtonPress(delegatedHallOrder)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)
-			onFloorArrival(newFloor)
+			onFloorArrival(newFloor, orderCompleteChannel)
 
 		case obstruction := <-event_obstruction:
 			if obstruction {

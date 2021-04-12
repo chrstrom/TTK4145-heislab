@@ -3,23 +3,21 @@ package hallOrderManager
 import (
 	"fmt"
 	"sort"
-
-	msg "../orderTypes"
 )
 
-type OrderMap map[string]map[int]msg.HallOrder
+type OrderMap map[string]map[int]Order
 
-func (om OrderMap) update(order msg.HallOrder) {
+func (om OrderMap) update(order Order) {
 	_, ok := om[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]msg.HallOrder)
+		om[order.OwnerID] = make(map[int]Order)
 	}
 	om[order.OwnerID][order.ID] = order
 
 	om.printOrderMap()
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
+func (om OrderMap) getOrder(ownerID string, orderID int) (order Order, found bool) {
 	_, ok := om[ownerID]
 	if ok {
 		o, ok2 := om[ownerID][orderID]
@@ -27,7 +25,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, f
 			return o, true
 		}
 	}
-	return msg.HallOrder{}, false
+	return Order{}, false
 }
 
 func (om OrderMap) printOrderMap() {
@@ -49,7 +47,7 @@ func (om OrderMap) printOrderMap() {
 		sort.Ints(orders[i])
 		i++
 	}
-	//sort.Strings(nodeids)
+	sort.Strings(nodeids)
 	i = 0
 	for _, id := range nodeids {
 		fmt.Printf("Node: %s \n", id)
@@ -59,11 +57,11 @@ func (om OrderMap) printOrderMap() {
 			o := om[id][oid]
 			state := ""
 			switch o.State {
-			case msg.Received:
+			case Received:
 				state = "Received"
-			case msg.Delegate:
+			case Delegate:
 				state = "Delegate"
-			case msg.Serving:
+			case Serving:
 				state = "serving"
 			}
 			fmt.Printf("%v           %v      %s     %v        %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)

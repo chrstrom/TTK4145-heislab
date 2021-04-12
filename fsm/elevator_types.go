@@ -7,7 +7,8 @@ import (
 const N_FLOORS = 4
 const N_BUTTONS = 3
 
-const DOOR_OPEN_DURATION = 5
+const DOOR_OPEN_DURATION = 2
+const TRAVEL_TIME = 1
 
 type ElevatorState int
 

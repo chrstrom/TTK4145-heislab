@@ -15,7 +15,7 @@ const fileDuplicates = 3
 
 const backupPath = "orderBackup/"
 
-//const backupPath = "/Users/svein/"
+//const backupPath = "/Users/svein/cabOrderStorage"
 
 func StoreCabOrders(orders [numFloors][numButtons]bool) {
 	orderString := ""

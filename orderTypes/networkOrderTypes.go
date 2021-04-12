@@ -17,14 +17,14 @@ type NetworkHallOrder struct {
 type NetworkChannels struct {
 	RequestToNetwork           chan OrderStamped
 	DelegateOrderToNetwork     chan OrderStamped
-	RequestReplyToNetwork      chan OrderStamped
+	ReplyToRequestToNetwork    chan OrderStamped
 	DelegationConfirmToNetwork chan OrderStamped
 	OrderCompleteToNetwork     chan OrderStamped
 	SyncOrderToNetwork         chan HallOrder
 
 	RequestFromNetwork           chan OrderStamped
 	DelegateFromNetwork          chan OrderStamped
-	RequestReplyFromNetwork      chan OrderStamped
+	ReplyToRequestFromNetwork    chan OrderStamped
 	DelegationConfirmFromNetwork chan OrderStamped
 	OrderCompleteFromNetwork     chan OrderStamped
 	SyncOrderFromNetwork         chan HallOrder

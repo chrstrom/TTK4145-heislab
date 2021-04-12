@@ -24,7 +24,7 @@ type HallOrderManager struct {
 	delegateToNetwork          chan<- msg.OrderStamped
 	orderSyncToNetwork         chan<- msg.HallOrder
 
-	requestReplyFromNetwork           <-chan msg.OrderStamped
+	replyToRequestFromNetwork         <-chan msg.OrderStamped
 	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped
 	delegationFromNetwork             <-chan msg.OrderStamped
 	orderSyncFromNetwork              <-chan msg.HallOrder

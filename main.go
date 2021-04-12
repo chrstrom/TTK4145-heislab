@@ -67,7 +67,7 @@ func testOrderManager() {
 	go hallOrderManager.OrderManager(id, hallOrderChannel, networkChannels)
 
 	// /** 	mock functions for testing 		**/
-	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.RequestReplyToNetwork)
+	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
 	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}

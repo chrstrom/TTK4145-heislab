@@ -56,6 +56,8 @@ func main() {
 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 	go fsm.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
 
+	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
+
 	for {
 	}
 

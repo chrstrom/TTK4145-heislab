@@ -13,7 +13,7 @@ func ReplyToRequests(request <-chan msg.OrderStamped, reply chan<- msg.OrderStam
 		select {
 		case r := <-request:
 			rep := msg.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: msg.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
-			rep.Order.Cost = rand.Intn(1000)
+			rep.Order.Cost = rand.Intn(10)
 			reply <- rep
 			//fmt.Printf("	net %v - Sending mock reply \n", r.OrderID)
 		}

@@ -89,7 +89,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 		}
 	}
 
-	setAllLights()
+	setCabLights()
 }
 
 func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
@@ -107,9 +107,8 @@ func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
 			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
 
 			doorOpenTimer()
-
-			// Set all order lights again
-			setAllLights()
+			setCabLights()
+			
 			elevator.state = DoorOpen
 		}
 
@@ -138,18 +137,18 @@ func onObstruction(obstruction bool) {
 	onDoorTimeout()
 }
 
-func setAllLights() {
+func setCabLights() {
+	cab_button := io.ButtonType(2)
+
 	for f := 0; f < N_FLOORS; f++ {
-		for b := io.ButtonType(0); b < N_BUTTONS; b++ {
-			if elevator.requests[f][b] {
-				io.SetButtonLamp(b, f, true)
-			} else {
-				io.SetButtonLamp(b, f, false)
-			}
 
+		if elevator.requests[f][cab_button] {
+			io.SetButtonLamp(cab_button, f, true)
+		} else {
+			io.SetButtonLamp(cab_button, f, false)
 		}
-	}
 
+	}
 }
 
 func doorOpenTimer() {

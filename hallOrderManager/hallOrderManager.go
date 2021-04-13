@@ -50,7 +50,7 @@ func OrderManager(
 			selfServeHallOrder(orderID, &manager)
 
 		case order := <-manager.orderCompleteTimeoutChannel:
-			redelegateOrder(order, &manager)
+			handleOrderCompleteTimeout(order, &manager)
 
 		case peerUpdate := <-manager.peerUpdateChannel:
 			handlePeerUpdate(peerUpdate, &manager)
@@ -243,10 +243,20 @@ func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 	manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
 }
 
+func handleOrderCompleteTimeout(order msg.HallOrder, manager *HallOrderManager) {
+	manager.logger.Printf("Order timeout ID%v: %#v", order.ID, order)
+	redelegateOrder(order, manager)
+}
+
 func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 	order, ok := manager.orders.getOrder(o.OwnerID, o.ID)
 	if ok && order.State != msg.Completed {
-		order.OwnerID = manager.id
+		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
+		if order.OwnerID != manager.id {
+			order.OwnerID = manager.id
+			order.ID = manager.orderIDCounter
+			manager.orderIDCounter++
+		}
 		order.Costs = make(map[string]int)
 		order.DelegatedToID = ""
 		order.State = msg.Received
@@ -263,20 +273,31 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 			OrderID: order.ID,
 			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
-		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
 		manager.requestToNetwork <- orderToNet
 	}
 }
 
 func handlePeerUpdate(peerUpdate peers.PeerUpdate, manager *HallOrderManager) {
-	manager.logger.Printf("Peer update: %#v", peerUpdate)
 	for _, nodeid := range peerUpdate.Lost {
+		manager.logger.Printf("Node lost connection: %v", nodeid)
 		orders := manager.orders.getOrderToID(nodeid)
 		for _, o := range orders {
 			if o.OwnerID == manager.id {
 				redelegateOrder(o, manager)
+				fmt.Println("redelegeate 1")
 			} else if !utility.IsStringInSlice(o.OwnerID, peerUpdate.Peers) && !utility.IsStringInSlice(o.DelegatedToID, peerUpdate.Peers) {
 				redelegateOrder(o, manager)
+				fmt.Println("redelegeate 2")
+			}
+		}
+	}
+
+	if len(peerUpdate.New) > 0 {
+		manager.logger.Printf("New node(s) connected")
+		orders := manager.orders.getOrderFromID(manager.id)
+		for _, o := range orders {
+			if o.State == msg.Serving {
+				orderStateBroadcast(o, manager)
 			}
 		}
 	}

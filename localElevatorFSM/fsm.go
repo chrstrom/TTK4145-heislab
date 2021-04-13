@@ -1,7 +1,6 @@
 package fsm
 
 import (
-	"fmt"
 	"time"
 
 	"../cabOrderStorage"
@@ -173,8 +172,8 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	for f := 0; f < N_FLOORS; f++ {
 		elevator.requests[f][2] = cabOrders[f]
 	}
-	fmt.Printf("CabOrders loaded!\n")
-	fmt.Printf("CabOrders %+v\n", cabOrders)
+	//fmt.Printf("CabOrders loaded!\n")
+	//fmt.Printf("CabOrders %+v\n", cabOrders)
 
 	if elevator.floor == -1 {
 		onInitBetweenFloors()
@@ -183,7 +182,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
 	for {
 		// Dooropen=0, Moving=1, Idle=2
-		fmt.Printf("State:%+v\n", elevator.state)
+		//fmt.Printf("State:%+v\n", elevator.state)
 
 		//Store cab orders
 		cabOrderStorage.StoreCabOrders(elevator.requests)
@@ -191,7 +190,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		select {
 
 		case cabOrder := <-event_cabOrder:
-			fmt.Printf("%+v\n", cabOrder)
+			//fmt.Printf("%+v\n", cabOrder)
 			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab})
 
 		case costRequested := <-fsmChannels.RequestCost:
@@ -200,20 +199,20 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			fsmChannels.Cost <- cost
 
 		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
-			fmt.Printf("Hallorder recieved!\n")
+			//fmt.Printf("Hallorder recieved!\n")
 			onRequestButtonPress(delegatedHallOrder)
 
 		case newFloor := <-event_floorArrival:
-			fmt.Printf("%+v\n", newFloor)
+			//fmt.Printf("%+v\n", newFloor)
 			onFloorArrival(newFloor, fsmChannels.OrderComplete)
 
 		case obstruction := <-event_obstruction:
 			if obstruction {
 				elevator.obstruction = true
-				fmt.Printf("Obstruction triggered!\n")
+				//fmt.Printf("Obstruction triggered!\n")
 			} else {
 				elevator.obstruction = false
-				fmt.Printf("No obstruction\n")
+				//fmt.Printf("No obstruction\n")
 			}
 			onObstruction(elevator.obstruction)
 

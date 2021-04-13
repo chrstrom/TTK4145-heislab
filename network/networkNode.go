@@ -251,6 +251,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 
 		case peerUpdate := <-node.peerUpdateChannelRx:
 			node.networkChannels.PeerUpdate <- peerUpdate
+			node.loggerIncoming.Printf("Peer update: %#v", peerUpdate)
 
 		}
 	}

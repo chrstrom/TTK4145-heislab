@@ -1,8 +1,10 @@
 package hallOrderManager
 
 import (
+
 	"fmt"
 	"log"
+
 	"os"
 
 	"../elevio"
@@ -187,7 +189,7 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 		if id == manager.id {
 			//send order to local elevator
 			manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
-			fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
+			
 
 			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
 			order.State = msg.Serving

@@ -47,6 +47,9 @@ func OrderManager(
 		case orderID := <-manager.orderDelegationTimeoutChannel:
 			selfServeHallOrder(orderID, &manager)
 
+		case order := <-manager.orderCompleteTimeoutChannel:
+			redelegateOrder(order, &manager)
+
 			//case <-time.After(time.Second * 5):
 			//	manager.logger.Printf("Quiet for 5 seconds")
 		}
@@ -86,6 +89,7 @@ func initializeManager(
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
+	manager.orderCompleteTimeoutChannel = make(chan msg.HallOrder)
 
 	filepath := "log/" + manager.id + "-hallOrderManager.log"
 	file, _ := os.Create(filepath)
@@ -118,6 +122,7 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 
 	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
+	timer.SendWithDelayHallOrder(orderCopletionTimeout, manager.orderCompleteTimeoutChannel, order)
 
 	orderToNet := msg.OrderStamped{
 		OrderID: order.ID,
@@ -230,4 +235,28 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 	manager.orderSyncToNetwork <- order
 	manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
+}
+
+func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
+	order, ok := manager.orders.getOrder(o.OwnerID, o.ID)
+	if ok {
+		order.Costs = make(map[string]int)
+		order.DelegatedToID = ""
+		order.State = msg.Received
+
+		manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+		order.Costs[manager.id] = <-manager.elevatorCost
+
+		manager.orders.update(order)
+
+		timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
+		timer.SendWithDelayHallOrder(orderCopletionTimeout, manager.orderCompleteTimeoutChannel, order)
+
+		orderToNet := msg.OrderStamped{
+			OrderID: order.ID,
+			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+
+		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
+		manager.requestToNetwork <- orderToNet
+	}
 }

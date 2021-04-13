@@ -11,6 +11,7 @@ import (
 
 const orderReplyTime = time.Millisecond * 50
 const orderDelegationTime = time.Millisecond * 500
+const orderCopletionTimeout = time.Second * 5
 
 type HallOrderManager struct {
 	id string
@@ -36,6 +37,7 @@ type HallOrderManager struct {
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int
+	orderCompleteTimeoutChannel   chan msg.HallOrder
 
 	logger *log.Logger
 }

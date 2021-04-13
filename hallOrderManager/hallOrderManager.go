@@ -40,7 +40,7 @@ func OrderManager(
 		case delegation := <-manager.delegationFromNetwork:
 			acceptDelegatedHallOrder(delegation, &manager)
 
-		case sync:= <-manager.orderSyncFromNetwork:
+		case sync := <-manager.orderSyncFromNetwork:
 			synchronizeOrderFromNetwork(sync, &manager)
 
 		case orderID := <-manager.orderReplyTimeoutChannel:
@@ -235,7 +235,7 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 
 		manager.orders.update(order)
 		orderStateBroadcast(order, manager)
-		
+
 		setHallLight(order.Dir, order.Floor, true)
 	}
 }

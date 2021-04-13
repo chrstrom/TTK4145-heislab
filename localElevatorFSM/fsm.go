@@ -58,7 +58,7 @@ func onInitBetweenFloors() {
 	elevator.state = Moving
 }
 
-func onRequestButtonPress(button_msg io.ButtonEvent) {
+func onRequestButtonPress(button_msg io.ButtonEvent, orderCompleteCh chan<- io.ButtonEvent) {
 
 	var button_floor = button_msg.Floor
 	var button_type = button_msg.Button
@@ -66,11 +66,10 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 	switch elevator.state {
 
 	case DoorOpen:
+		elevator.requests[button_floor][button_type] = true
 		if elevator.floor == button_floor {
+			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
 			doorOpenTimer()
-
-		} else {
-			elevator.requests[button_floor][button_type] = true
 		}
 
 	case Moving:
@@ -78,6 +77,8 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 
 	case Idle:
 		if elevator.floor == button_floor {
+			elevator.requests[button_floor][button_type] = true
+			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
 			io.SetDoorOpenLamp(true)
 			doorOpenTimer()
 			elevator.state = DoorOpen
@@ -108,7 +109,7 @@ func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
 
 			doorOpenTimer()
 			setCabLights()
-			
+
 			elevator.state = DoorOpen
 		}
 
@@ -191,7 +192,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 		case cabOrder := <-event_cabOrder:
 			fmt.Printf("%+v\n", cabOrder)
-			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab})
+			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab}, fsmChannels.OrderComplete)
 
 		case costRequested := <-fsmChannels.RequestCost:
 			elevatorSimulator = elevator
@@ -200,7 +201,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
 			fmt.Printf("Hallorder recieved!\n")
-			onRequestButtonPress(delegatedHallOrder)
+			onRequestButtonPress(delegatedHallOrder, fsmChannels.OrderComplete)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)

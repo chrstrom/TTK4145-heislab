@@ -78,6 +78,8 @@ func testOrderManager() {
 
 	// /** 	mock functions for testing 		**/
 	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
+	go mock.Receive(fsmChannels.DelegateHallOrder)
+	go mock.ElevatorCost(fsmChannels.RequestCost, fsmChannels.Cost)
 	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}

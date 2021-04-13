@@ -6,12 +6,15 @@ import (
 
 	"../elevio"
 	"../localOrderDelegation"
+	"../network/peers"
 	msg "../orderTypes"
 )
 
-const orderReplyTime = time.Millisecond * 50
+const orderReplyTime = time.Millisecond * 300
 const orderDelegationTime = time.Millisecond * 500
-const orderCompletionTimeout = time.Second * 5
+const orderCompletionTimeout = time.Second * 50
+
+//const orderCompletionTimeoutSelfServe = orderCompletionTimeout * 2
 
 type HallOrderManager struct {
 	id string
@@ -32,6 +35,7 @@ type HallOrderManager struct {
 	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped
 	delegationFromNetwork             <-chan msg.OrderStamped
 	orderSyncFromNetwork              <-chan msg.HallOrder
+	peerUpdateChannel                 <-chan peers.PeerUpdate
 	elevatorCost                      <-chan int
 	orderComplete                     <-chan elevio.ButtonEvent
 

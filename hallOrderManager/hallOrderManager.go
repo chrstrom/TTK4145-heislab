@@ -8,8 +8,10 @@ import (
 
 	"../elevio"
 	"../localOrderDelegation"
+	"../network/peers"
 	msg "../orderTypes"
 	"../timer"
+	"../utility"
 )
 
 func OrderManager(
@@ -50,6 +52,9 @@ func OrderManager(
 		case order := <-manager.orderCompleteTimeoutChannel:
 			redelegateOrder(order, &manager)
 
+		case peerUpdate := <-manager.peerUpdateChannel:
+			handlePeerUpdate(peerUpdate, &manager)
+
 			//case <-time.After(time.Second * 5):
 			//	manager.logger.Printf("Quiet for 5 seconds")
 		}
@@ -81,6 +86,7 @@ func initializeManager(
 	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
+	manager.peerUpdateChannel = channels.PeerUpdate
 
 	manager.delegateToLocalElevator = fsmChannels.DelegateHallOrder
 	manager.elevatorCost = fsmChannels.Cost
@@ -114,7 +120,7 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 
 	//get local elevator cost in some way
 	manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
-	order.Costs[manager.id] = <-manager.elevatorCost
+	order.Costs[manager.id] = <-manager.elevatorCost * 0
 	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
 	//order.Costs[manager.id] = rand.Intn(1000)
 
@@ -239,7 +245,8 @@ func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 
 func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 	order, ok := manager.orders.getOrder(o.OwnerID, o.ID)
-	if ok {
+	if ok && order.State != msg.Completed {
+		order.OwnerID = manager.id
 		order.Costs = make(map[string]int)
 		order.DelegatedToID = ""
 		order.State = msg.Received
@@ -256,7 +263,21 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 			OrderID: order.ID,
 			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
-		manager.logger.Printf("Timeout order ID%v, redelegating: %#v", order.ID, order)
+		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
 		manager.requestToNetwork <- orderToNet
+	}
+}
+
+func handlePeerUpdate(peerUpdate peers.PeerUpdate, manager *HallOrderManager) {
+	manager.logger.Printf("Peer update: %#v", peerUpdate)
+	for _, nodeid := range peerUpdate.Lost {
+		orders := manager.orders.getOrderToID(nodeid)
+		for _, o := range orders {
+			if o.OwnerID == manager.id {
+				redelegateOrder(o, manager)
+			} else if !utility.IsStringInSlice(o.OwnerID, peerUpdate.Peers) && !utility.IsStringInSlice(o.DelegatedToID, peerUpdate.Peers) {
+				redelegateOrder(o, manager)
+			}
+		}
 	}
 }

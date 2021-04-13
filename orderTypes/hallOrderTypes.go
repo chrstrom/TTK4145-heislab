@@ -6,6 +6,7 @@ const (
 	Received OrderStateType = iota
 	Delegate
 	Serving
+	Completed
 )
 
 type Order struct {
@@ -19,7 +20,6 @@ type OrderStamped struct {
 	OrderID int
 	Order   Order
 }
-
 
 type HallOrder struct {
 	OwnerID       string

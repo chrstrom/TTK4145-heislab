@@ -16,7 +16,7 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	testOrderManager()
+	//testOrderManager()
 
 	numFloors := 4
 	io.Init("localhost:15657", numFloors)

@@ -122,7 +122,7 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 
 	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
-	timer.SendWithDelayHallOrder(orderCopletionTimeout, manager.orderCompleteTimeoutChannel, order)
+	timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
 
 	orderToNet := msg.OrderStamped{
 		OrderID: order.ID,
@@ -250,13 +250,13 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 		manager.orders.update(order)
 
 		timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
-		timer.SendWithDelayHallOrder(orderCopletionTimeout, manager.orderCompleteTimeoutChannel, order)
+		timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
 
 		orderToNet := msg.OrderStamped{
 			OrderID: order.ID,
 			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
-		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
+		manager.logger.Printf("Timeout order ID%v, redelegating: %#v", order.ID, order)
 		manager.requestToNetwork <- orderToNet
 	}
 }

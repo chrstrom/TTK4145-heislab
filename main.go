@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"math/rand"
 	"time"
 
@@ -13,13 +14,15 @@ import (
 )
 
 func main() {
+	elevatorPort := flag.String("port", "15657", "port number of the elevator server")
+	flag.Parse()
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	//testOrderManager()
 
 	numFloors := 4
-	io.Init("localhost:15657", numFloors)
+	io.Init("localhost:"+*elevatorPort, numFloors)
 
 	// IO Channels //
 	drv_buttons := make(chan io.ButtonEvent)

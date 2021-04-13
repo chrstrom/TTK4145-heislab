@@ -107,7 +107,6 @@ func initializeManager(
 func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOrderManager) {
 	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
 
-	// This order will get synced with every elevator on the network
 	order := msg.HallOrder{
 		OwnerID: manager.id,
 		ID:      manager.orderIDCounter,
@@ -118,15 +117,12 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 	manager.orderIDCounter++
 	order.Costs = make(map[string]int)
 
-	//get local elevator cost in some way
 	manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
-	order.Costs[manager.id] = <-manager.elevatorCost * 0
+	order.Costs[manager.id] = <-manager.elevatorCost
 	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
-	//order.Costs[manager.id] = rand.Intn(1000)
 
 	manager.orders.update(order)
 
-	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
 	timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
 

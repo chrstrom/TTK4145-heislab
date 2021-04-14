@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"../cabOrderStorage"
 	io "../elevio"
+	types "../orderTypes"
 	"../timer"
 )
 
@@ -23,6 +25,19 @@ import (
 // The for-select block in RunElevatorFSM() will at all times only execute
 // one case, which means that we will not run into concurrency problems here either
 var elevator = makeUninitializedElevator()
+var elevatorSimulator = makeUninitializedElevator()
+var cost = 0
+
+func CreateFSMChannelStruct() types.FSMChannels {
+	var fsmChannels types.FSMChannels
+
+	fsmChannels.DelegateHallOrder = make(chan io.ButtonEvent)
+	fsmChannels.Cost = make(chan int)
+	fsmChannels.RequestCost = make(chan io.ButtonEvent)
+	fsmChannels.OrderComplete = make(chan io.ButtonEvent)
+
+	return fsmChannels
+}
 
 func makeUninitializedElevator() Elevator {
 	elevator := new(Elevator)
@@ -68,7 +83,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 			elevator.state = DoorOpen
 		} else {
 			elevator.requests[button_floor][button_type] = true
-			elevator.direction = chooseDirection()
+			elevator.direction = chooseDirection(elevator)
 			io.SetMotorDirection(elevator.direction)
 			elevator.state = Moving
 		}
@@ -77,7 +92,7 @@ func onRequestButtonPress(button_msg io.ButtonEvent) {
 	setAllLights()
 }
 
-func onFloorArrival(floor int) {
+func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
 	elevator.floor = floor
 
 	// Set floor light
@@ -87,9 +102,9 @@ func onFloorArrival(floor int) {
 
 	case Moving:
 
-		if shouldStop() {
+		if shouldStop(elevator) {
 			io.SetMotorDirection(io.MD_Stop)
-			clearRequestAtFloor()
+			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
 
 			doorOpenTimer()
 
@@ -104,7 +119,7 @@ func onFloorArrival(floor int) {
 func onDoorTimeout() {
 	if elevator.state == DoorOpen && !elevator.obstruction {
 		io.SetDoorOpenLamp(false)
-		elevator.direction = chooseDirection()
+		elevator.direction = chooseDirection(elevator)
 		io.SetMotorDirection(elevator.direction)
 
 		if elevator.direction == io.MD_Stop {
@@ -138,7 +153,7 @@ func setAllLights() {
 }
 
 func doorOpenTimer() {
-	const doorOpenTime = time.Millisecond * 2000
+	const doorOpenTime = time.Second * DOOR_OPEN_DURATION
 	io.SetDoorOpenLamp(true)
 	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
 }
@@ -146,30 +161,51 @@ func doorOpenTimer() {
 // This function is the function from the fsm package that will run
 // as a goroutine. Because of this, it should take inputs based on
 // channels, and the for-select will take care of the
-func RunElevatorFSM(event_orderButton <-chan io.ButtonEvent,
+func RunElevatorFSM(event_cabOrder <-chan int,
+	fsmChannels types.FSMChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
 	event_timer <-chan int) {
 
-	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
+	//Load cab ordes
+	cabOrders := cabOrderStorage.LoadCabOrders()
+	for f := 0; f < N_FLOORS; f++ {
+		elevator.requests[f][2] = cabOrders[f]
+	}
+	fmt.Printf("CabOrders loaded!\n")
+	fmt.Printf("CabOrders %+v\n", cabOrders)
+
 	if elevator.floor == -1 {
 		onInitBetweenFloors()
 	}
 
+	// Loops indefinitely. RunElevatorFSM *should be* a goroutine.
 	for {
 		// Dooropen=0, Moving=1, Idle=2
 		fmt.Printf("State:%+v\n", elevator.state)
 
+		//Store cab orders
+		cabOrderStorage.StoreCabOrders(elevator.requests)
+
 		select {
 
-		case newButtonPress := <-event_orderButton:
-			fmt.Printf("%+v\n", newButtonPress)
-			onRequestButtonPress(newButtonPress)
+		case cabOrder := <-event_cabOrder:
+			fmt.Printf("%+v\n", cabOrder)
+			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab})
+
+		case costRequested := <-fsmChannels.RequestCost:
+			elevatorSimulator = elevator
+			cost = timeToIdle(elevatorSimulator, costRequested.Floor, int(costRequested.Button))
+			fsmChannels.Cost <- cost
+
+		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
+			fmt.Printf("Hallorder recieved!\n")
+			onRequestButtonPress(delegatedHallOrder)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)
-			onFloorArrival(newFloor)
+			onFloorArrival(newFloor, fsmChannels.OrderComplete)
 
 		case obstruction := <-event_obstruction:
 			if obstruction {

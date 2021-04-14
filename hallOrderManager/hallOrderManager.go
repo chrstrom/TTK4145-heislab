@@ -1,10 +1,12 @@
 package hallOrderManager
 
 import (
+	"fmt"
 	"log"
-	"math/rand"
+
 	"os"
 
+	"../elevio"
 	"../localOrderDelegation"
 	msg "../orderTypes"
 	"../timer"
@@ -13,14 +15,19 @@ import (
 func OrderManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
+	fsmChannels msg.FSMChannels,
 	channels msg.NetworkChannels) {
 
-	manager := initializeManager(id, localRequestCh, channels)
+	manager := initializeManager(id, localRequestCh, fsmChannels, channels)
 
 	for {
 		select {
 		case request := <-manager.localRequestChannel:
 			handleLocalRequest(request, &manager)
+		case orderComplete := <-manager.orderComplete:
+			//Get orders at the same floor from ordermap
+			//Send confirmation to network
+			fmt.Printf("Order %v completed\n", orderComplete)
 
 		case reply := <-manager.replyToRequestFromNetwork:
 			handleReplyFromNetwork(reply, &manager)
@@ -49,6 +56,7 @@ func OrderManager(
 func initializeManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
+	fsmChannels msg.FSMChannels,
 	channels msg.NetworkChannels) HallOrderManager {
 
 	var manager HallOrderManager
@@ -70,6 +78,11 @@ func initializeManager(
 	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
+
+	manager.delegateToLocalElevator = fsmChannels.DelegateHallOrder
+	manager.elevatorCost = fsmChannels.Cost
+	manager.requestElevatorCost = fsmChannels.RequestCost
+	manager.orderComplete = fsmChannels.OrderComplete
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
@@ -96,7 +109,10 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 	order.Costs = make(map[string]int)
 
 	//get local elevator cost in some way
-	order.Costs[manager.id] = rand.Intn(1000)
+	manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+	order.Costs[manager.id] = <-manager.elevatorCost
+	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
+	//order.Costs[manager.id] = rand.Intn(1000)
 
 	manager.orders.update(order)
 
@@ -144,6 +160,7 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 
 	manager.orders.update(order)
 	manager.logger.Printf("Received order from net: %#v", order)
+	manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: delegation.Order.Floor, Button: elevio.ButtonType(delegation.Order.Dir)}
 
 	reply := msg.OrderStamped{
 		ID:      order.OwnerID,
@@ -171,7 +188,7 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 
 		if id == manager.id {
 			//send order to local elevator
-			//fmt.Printf("%v - delegate to local elevator (%v replies) \n", orderID, len(order.Costs))
+			manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
 
 			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
 			order.State = msg.Serving
@@ -198,6 +215,7 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, orderID)
 	if valid && order.State == msg.Delegate {
 		//Send order to local elevator
+		manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
 		order.DelegatedToID = manager.id
 		order.State = msg.Serving
 

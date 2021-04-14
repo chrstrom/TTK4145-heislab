@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"../elevio"
 	"../localOrderDelegation"
 	msg "../orderTypes"
 )
@@ -23,11 +24,15 @@ type HallOrderManager struct {
 	delegationConfirmToNetwork chan<- msg.OrderStamped
 	delegateToNetwork          chan<- msg.OrderStamped
 	orderSyncToNetwork         chan<- msg.HallOrder
+	delegateToLocalElevator    chan<- elevio.ButtonEvent
+	requestElevatorCost        chan<- elevio.ButtonEvent
 
 	replyToRequestFromNetwork         <-chan msg.OrderStamped
 	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped
 	delegationFromNetwork             <-chan msg.OrderStamped
 	orderSyncFromNetwork              <-chan msg.HallOrder
+	elevatorCost                      <-chan int
+	orderComplete                     <-chan elevio.ButtonEvent
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

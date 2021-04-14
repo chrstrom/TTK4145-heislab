@@ -13,21 +13,23 @@ func ReplyToRequests(request <-chan msg.OrderStamped, reply chan<- msg.OrderStam
 		select {
 		case r := <-request:
 			rep := msg.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: msg.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
-			rep.Order.Cost = rand.Intn(1000)
+			rep.Order.Cost = rand.Intn(10)
 			reply <- rep
 			//fmt.Printf("	net %v - Sending mock reply \n", r.OrderID)
 		}
 	}
 }
 
-func ReplyToDelegations(delegation <-chan msg.OrderStamped, reply chan<- msg.OrderStamped) {
+func Receive(ch <-chan elevio.ButtonEvent) {
 	for {
-		select {
-		case d := <-delegation:
-			rep := msg.OrderStamped{ID: d.ID, OrderID: d.OrderID, Order: msg.Order{Floor: d.Order.Floor, Dir: d.Order.Dir}}
-			reply <- rep
-			//fmt.Printf("	net %v - Sending mock confirmation \n", d.OrderID)
-		}
+		<-ch
+	}
+}
+
+func ElevatorCost(in <-chan elevio.ButtonEvent, out chan<- int) {
+	for {
+		<-in
+		out <- rand.Intn(1000)
 	}
 }
 

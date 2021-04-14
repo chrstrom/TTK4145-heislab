@@ -6,23 +6,28 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/TTK4145-Students-2021/project-gruppe80/utility"
+	"../utility"
 )
 
 const numFloors = 4 //use istead a global variable for number of floors
+const numButtons = 3
 const fileDuplicates = 3
+
 const backupPath = "orderBackup/"
 
-func StoreCabOrders(orders [numFloors]bool) {
+//const backupPath = "/Users/svein/cabOrderStorage"
+
+func StoreCabOrders(orders [numFloors][numButtons]bool) {
 	orderString := ""
 	for _, v := range orders {
-		orderString = orderString + " " + strconv.FormatBool(v)
+		orderString = orderString + " " + strconv.FormatBool(v[numButtons-1])
 	}
 	orderString = orderString[1:]
 
 	for i := 0; i < fileDuplicates; i++ {
 		filename := backupPath + "hallorders" + strconv.Itoa(i) + ".txt"
 		ioutil.WriteFile(filename, []byte(orderString), 0644)
+
 	}
 }
 

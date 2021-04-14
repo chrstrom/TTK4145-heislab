@@ -203,7 +203,9 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 }
 
 func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
-	if order.OwnerID != manager.id {
+	orderSaved, exists := manager.orders.getOrder(order.OwnerID, order.ID)
+
+	if !exists || (exists && order.State >= orderSaved.State) {
 		manager.logger.Printf("Sync from net: %#v", order)
 
 		manager.orders.update(order)

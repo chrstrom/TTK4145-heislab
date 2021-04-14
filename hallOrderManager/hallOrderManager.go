@@ -177,8 +177,9 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 }
 
 func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
-	// Receive an order from the network and add it to the list of hall orders
-	if order.OwnerID != manager.id {
+	orderSaved, exists := manager.orders.getOrder(order.OwnerID, order.ID)
+
+	if !exists || (exists && order.State >= orderSaved.State) {
 		_, exists := manager.orders.getOrder(order.OwnerID, order.ID)
 		if !exists {
 			timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)

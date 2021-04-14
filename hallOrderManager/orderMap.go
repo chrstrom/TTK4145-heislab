@@ -30,6 +30,21 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, f
 	return msg.HallOrder{}, false
 }
 
+func (om OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder {
+	
+	orders := make([]msg.HallOrder, 0)
+	
+	for _, node := range om {
+		for _, order := range node {
+			if order.Dir == dir && order.Floor == floor {
+				orders = append(orders, order)
+			}
+		}
+	}
+
+	return orders
+}
+
 func (om OrderMap) printOrderMap() {
 	//fmt.Print("\033[H\033[2J") //Clear screen in Go console
 	/*cmd := exec.Command("cmd", "/c", "cls") //Clear screen in windows cmd

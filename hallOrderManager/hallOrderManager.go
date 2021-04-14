@@ -146,16 +146,13 @@ func completeOrder(buttonEvent elevio.ButtonEvent, manager *HallOrderManager) {
 	floor := buttonEvent.Floor
 
 	setHallLight(dir, floor, false)
-
-	for _, node := range manager.orders {
-		for _, order := range node {
-			if order.Dir == dir && order.Floor == floor {
-				order.State = msg.Completed
-				manager.logger.Printf("Order %v completed\n", order)
-				orderStateBroadcast(order, manager)
-			}
-		}
+	for _, order := range manager.orders.getOrdersToFloorWithDir(floor, dir) {
+		order.State = msg.Completed
+		manager.orders.update(order)
+		manager.logger.Printf("Order %v completed\n", order)
+		orderStateBroadcast(order, manager)
 	}
+
 }
 
 func handleReplyFromNetwork(reply msg.OrderStamped, manager *HallOrderManager) {

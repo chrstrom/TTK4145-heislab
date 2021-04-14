@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"os"
 
 	"log"
@@ -64,6 +65,8 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				Order:      reply}
 
 			node.messageIDCounter++
+
+			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Order.Cost)
 
 			node.loggerOutgoing.Printf("Reply to request: %#v", newReplyToRequest)
 			for i := 0; i < duplicatesOfMessages; i++ {

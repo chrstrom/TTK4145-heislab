@@ -163,6 +163,7 @@ func doorOpenTimer() {
 // channels, and the for-select will take care of the
 func RunElevatorFSM(event_cabOrder <-chan int,
 	fsmChannels types.FSMChannels,
+	channels types.NetworkChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
@@ -198,6 +199,14 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			elevatorSimulator = elevator
 			cost = timeToIdle(elevatorSimulator, costRequested.Floor, int(costRequested.Button))
 			fsmChannels.Cost <- cost
+
+		case r := <-channels.RequestFromNetwork:
+			rep := types.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: types.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
+			elevatorSimulator = elevator
+			cost = timeToIdle(elevatorSimulator, r.Order.Floor, int(r.Order.Dir))
+			rep.Order.Cost = cost
+			fmt.Printf("Cost sent to network: %+v\n", cost)
+			channels.ReplyToRequestToNetwork <- rep
 
 		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
 			fmt.Printf("Hallorder recieved!\n")

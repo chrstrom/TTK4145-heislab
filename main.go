@@ -51,7 +51,7 @@ func main() {
 	// Elevator //
 	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
-	go fsm.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
+	go fsm.RunElevatorFSM(cabOrderChannel, fsmChannels, networkChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
 
 	for {
 	}

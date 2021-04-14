@@ -34,7 +34,7 @@ type Node struct {
 	loggerOutgoing, loggerIncoming *log.Logger
 }
 
-func NetworkNode(id string, channels msg.NetworkChannels) {
+func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkChannels) {
 
 	node := initializeNetworkNode(id, channels)
 
@@ -56,7 +56,7 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				node.newRequestChannelTx <- newRequest
 			}
 
-		case reply := <-node.networkChannels.ReplyToRequestToNetwork:
+		case reply := <-fsmChannels.ReplyToNetWork:
 
 			newReplyToRequest := msg.NetworkOrder{
 				SenderID:   node.id,
@@ -65,7 +65,6 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 				Order:      reply}
 
 			node.messageIDCounter++
-
 			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Order.Cost)
 
 			node.loggerOutgoing.Printf("Reply to request: %#v", newReplyToRequest)
@@ -152,7 +151,8 @@ func NetworkNode(id string, channels msg.NetworkChannels) {
 					OrderID: request.Order.OrderID,
 					Order:   request.Order.Order}
 
-				node.networkChannels.RequestFromNetwork <- message
+				//node.networkChannels.RequestFromNetwork <- message
+				fsmChannels.RequestCost <- msg.RequestCost{Order: message, RequestFrom: msg.Network}
 			}
 
 		case replyToRequest := <-node.newReplyToRequestChannelRx:

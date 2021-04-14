@@ -12,9 +12,6 @@ import (
 	"../timer"
 )
 
-const N_FLOORS = 4
-const N_BUTTONS = 3
-
 func OrderManager(
 	id string,
 	localRequestCh <-chan localOrderDelegation.LocalOrder,
@@ -28,7 +25,8 @@ func OrderManager(
 		case request := <-manager.localRequestChannel:
 			handleLocalRequest(request, &manager)
 		case orderComplete := <-manager.orderComplete:
-			setHallLight(int(orderComplete.Button), orderComplete.Floor, false)
+			//Get orders at the same floor from ordermap
+			//Send confirmation to network
 			fmt.Printf("Order %v completed\n", orderComplete)
 
 		case reply := <-manager.replyToRequestFromNetwork:
@@ -40,8 +38,8 @@ func OrderManager(
 		case delegation := <-manager.delegationFromNetwork:
 			acceptDelegatedHallOrder(delegation, &manager)
 
-		case sync := <-manager.orderSyncFromNetwork:
-			synchronizeOrderFromNetwork(sync, &manager)
+		case order := <-manager.orderSyncFromNetwork:
+			synchronizeOrderFromNetwork(order, &manager)
 
 		case orderID := <-manager.orderReplyTimeoutChannel:
 			delegateHallOrder(orderID, &manager)
@@ -82,7 +80,7 @@ func initializeManager(
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
 
 	manager.delegateToLocalElevator = fsmChannels.DelegateHallOrder
-	manager.elevatorCost = fsmChannels.Cost
+	manager.elevatorCost = fsmChannels.ReplyToHallOrderManager
 	manager.requestElevatorCost = fsmChannels.RequestCost
 	manager.orderComplete = fsmChannels.OrderComplete
 
@@ -92,13 +90,6 @@ func initializeManager(
 	filepath := "log/" + manager.id + "-hallOrderManager.log"
 	file, _ := os.Create(filepath)
 	manager.logger = log.New(file, "", log.Ltime|log.Lmicroseconds)
-
-	// Turn off all hall lights on init
-	for f := 0; f < N_FLOORS; f++ {
-		for b := elevio.ButtonType(0); b < 2; b++ {
-			elevio.SetButtonLamp(b, f, false)
-		}
-	}
 
 	return manager
 }
@@ -117,8 +108,12 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 	manager.orderIDCounter++
 	order.Costs = make(map[string]int)
 
+	orderToFSM := msg.OrderStamped{
+		OrderID: order.ID,
+		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+
 	//get local elevator cost in some way
-	manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+	manager.requestElevatorCost <- msg.RequestCost{Order: orderToFSM, RequestFrom: msg.HallOrderManager}
 	order.Costs[manager.id] = <-manager.elevatorCost
 	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
 	//order.Costs[manager.id] = rand.Intn(1000)
@@ -176,8 +171,6 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 		OrderID: order.ID,
 		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 	manager.delegationConfirmToNetwork <- reply
-
-	setHallLight(order.Dir, order.Floor, true)
 }
 
 func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
@@ -200,14 +193,13 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 		if id == manager.id {
 			//send order to local elevator
 			manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+
 			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
 			order.State = msg.Serving
 			orderStateBroadcast(order, manager)
-
-			setHallLight(order.Dir, order.Floor, true)
-
 		} else {
 			manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
+			//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
 			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
 
 			order.State = msg.Delegate
@@ -231,12 +223,11 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 		order.DelegatedToID = manager.id
 		order.State = msg.Serving
 
+		//fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
 		manager.logger.Printf("Timeout delegation ID%v, sending to local elevator: %v", order.ID, order)
 
 		manager.orders.update(order)
 		orderStateBroadcast(order, manager)
-
-		setHallLight(order.Dir, order.Floor, true)
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"./hallOrderManager"
 	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
-	"./mock"
 	"./network"
 )
 
@@ -46,7 +45,7 @@ func main() {
 
 	// Network //
 	id := network.GetNodeID()
-	go network.NetworkNode(id, networkChannels)
+	go network.NetworkNode(id, fsmChannels, networkChannels)
 
 	// Elevator //
 	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
@@ -58,33 +57,33 @@ func main() {
 
 }
 
-func testOrderManager() {
-	// Order Manager Channels //
-	networkChannels := network.CreateNetworkChannelStruct()
-	//cabOrderChannel := make(chan int)
-	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-	fsmChannels := fsm.CreateFSMChannelStruct()
-	// delegateHallOrderChannel := make(chan io.ButtonEvent)
-	// costChannel := make(chan int)
-	// requestCostChannel := make(chan io.ButtonEvent)
-	// orderCompleteChannel := make(chan io.ButtonEvent)
+// func testOrderManager() {
+// 	// Order Manager Channels //
+// 	networkChannels := network.CreateNetworkChannelStruct()
+// 	//cabOrderChannel := make(chan int)
+// 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
+// 	fsmChannels := fsm.CreateFSMChannelStruct()
+// 	// delegateHallOrderChannel := make(chan io.ButtonEvent)
+// 	// costChannel := make(chan int)
+// 	// requestCostChannel := make(chan io.ButtonEvent)
+// 	// orderCompleteChannel := make(chan io.ButtonEvent)
 
-	// Network //
-	id := network.GetNodeID()
-	go network.NetworkNode(id, networkChannels)
+// 	// Network //
+// 	id := network.GetNodeID()
+// 	go network.NetworkNode(id, networkChannels)
 
-	// Elevator //
-	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
+// 	// Elevator //
+// 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 
-	// /** 	mock functions for testing 		**/
-	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
-	go mock.Receive(fsmChannels.DelegateHallOrder)
-	go mock.ElevatorCost(fsmChannels.RequestCost, fsmChannels.Cost)
-	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
+// 	// /** 	mock functions for testing 		**/
+// 	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
+// 	go mock.Receive(fsmChannels.DelegateHallOrder)
+// 	go mock.ElevatorCost(fsmChannels.RequestCost, fsmChannels.Cost)
+// 	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
 
-	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}
-	for {
-		time.Sleep(time.Second * 5)
-		hallOrderChannel <- o
-	}
-}
+// 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}
+// 	for {
+// 		time.Sleep(time.Second * 5)
+// 		hallOrderChannel <- o
+// 	}
+// }

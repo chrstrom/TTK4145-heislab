@@ -32,8 +32,9 @@ func CreateFSMChannelStruct() types.FSMChannels {
 	var fsmChannels types.FSMChannels
 
 	fsmChannels.DelegateHallOrder = make(chan io.ButtonEvent)
-	fsmChannels.Cost = make(chan int)
-	fsmChannels.RequestCost = make(chan io.ButtonEvent)
+	fsmChannels.ReplyToHallOrderManager = make(chan int)
+	fsmChannels.ReplyToNetWork = make(chan types.OrderStamped, 10)
+	fsmChannels.RequestCost = make(chan types.RequestCost, 10)
 	fsmChannels.OrderComplete = make(chan io.ButtonEvent)
 
 	return fsmChannels
@@ -91,6 +92,19 @@ func onRequestButtonPress(button_msg io.ButtonEvent, orderCompleteCh chan<- io.B
 	}
 
 	setCabLights()
+}
+
+func onRequestCost(costRequest types.RequestCost, fsmCh types.FSMChannels) {
+	elevatorSimulator = elevator
+	cost = timeToIdle(elevatorSimulator, costRequest.Order.Order.Floor, costRequest.Order.Order.Dir)
+	if costRequest.RequestFrom == types.Network {
+		rep := costRequest.Order
+		rep.Order.Cost = cost
+		fsmCh.ReplyToNetWork <- rep
+	} else {
+		fsmCh.ReplyToHallOrderManager <- cost
+	}
+
 }
 
 func onFloorArrival(floor int, orderCompleteCh chan<- io.ButtonEvent) {
@@ -192,25 +206,16 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		select {
 
 		case cabOrder := <-event_cabOrder:
-			fmt.Printf("%+v\n", cabOrder)
+			fmt.Printf("Caborder: %+v\n", cabOrder)
 			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab}, fsmChannels.OrderComplete)
 
-		case costRequested := <-fsmChannels.RequestCost:
-			elevatorSimulator = elevator
-			cost = timeToIdle(elevatorSimulator, costRequested.Floor, int(costRequested.Button))
-			fsmChannels.Cost <- cost
+		case hallOrder := <-fsmChannels.DelegateHallOrder:
+			fmt.Printf("Hallorder: %+v\n", hallOrder)
+			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete)
 
-		case r := <-channels.RequestFromNetwork:
-			rep := types.OrderStamped{ID: r.ID, OrderID: r.OrderID, Order: types.Order{Floor: r.Order.Floor, Dir: r.Order.Dir}}
-			elevatorSimulator = elevator
-			cost = timeToIdle(elevatorSimulator, r.Order.Floor, int(r.Order.Dir))
-			rep.Order.Cost = cost
-			fmt.Printf("Cost sent to network: %+v\n", cost)
-			channels.ReplyToRequestToNetwork <- rep
-
-		case delegatedHallOrder := <-fsmChannels.DelegateHallOrder:
-			fmt.Printf("Hallorder recieved!\n")
-			onRequestButtonPress(delegatedHallOrder, fsmChannels.OrderComplete)
+		case costRequest := <-fsmChannels.RequestCost:
+			fmt.Printf("Cost requested\n")
+			onRequestCost(costRequest, fsmChannels)
 
 		case newFloor := <-event_floorArrival:
 			fmt.Printf("%+v\n", newFloor)

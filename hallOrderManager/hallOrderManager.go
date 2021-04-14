@@ -179,6 +179,10 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
 	// Receive an order from the network and add it to the list of hall orders
 	if order.OwnerID != manager.id {
+		_, exists := manager.orders.getOrder(order.OwnerID, order.ID)
+		if !exists {
+			timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+		}
 		manager.orders.update(order)
 		manager.logger.Printf("Sync from net: %#v", order)
 	}
@@ -226,7 +230,6 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 		order.DelegatedToID = manager.id
 		order.State = msg.Serving
 
-		//fmt.Printf("------------- %v - delegation timedout! Sending to local elevator \n", orderID)
 		manager.logger.Printf("Timeout delegation ID%v, sending to local elevator: %v", order.ID, order)
 
 		manager.orders.update(order)
@@ -241,7 +244,8 @@ func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 
 func handleOrderCompleteTimeout(order msg.HallOrder, manager *HallOrderManager) {
 	manager.logger.Printf("Order timeout ID%v: %#v", order.ID, order)
-	redelegateOrder(order, manager)
+	manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+	//redelegateOrder(order, manager)
 }
 
 func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
@@ -280,10 +284,8 @@ func handlePeerUpdate(peerUpdate peers.PeerUpdate, manager *HallOrderManager) {
 		for _, o := range orders {
 			if o.OwnerID == manager.id {
 				redelegateOrder(o, manager)
-				fmt.Println("redelegeate 1")
 			} else if !utility.IsStringInSlice(o.OwnerID, peerUpdate.Peers) && !utility.IsStringInSlice(o.DelegatedToID, peerUpdate.Peers) {
 				redelegateOrder(o, manager)
-				fmt.Println("redelegeate 2")
 			}
 		}
 	}

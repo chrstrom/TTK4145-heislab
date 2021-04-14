@@ -12,7 +12,7 @@ import (
 
 const orderReplyTime = time.Millisecond * 300
 const orderDelegationTime = time.Millisecond * 500
-const orderCompletionTimeout = time.Second * 50
+const orderCompletionTimeout = time.Second * 20
 
 //const orderCompletionTimeoutSelfServe = orderCompletionTimeout * 2
 

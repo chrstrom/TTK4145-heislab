@@ -30,7 +30,6 @@ func OrderManager(
 
 		case buttonEvent := <-manager.orderComplete:
 			completeOrder(buttonEvent, &manager)
-			fmt.Printf("Order %v completed\n", buttonEvent)
 
 		case reply := <-manager.replyToRequestFromNetwork:
 			handleReplyFromNetwork(reply, &manager)
@@ -152,6 +151,7 @@ func completeOrder(buttonEvent elevio.ButtonEvent, manager *HallOrderManager) {
 		for _, order := range node {
 			if order.Dir == dir && order.Floor == floor {
 				order.State = msg.Completed
+				manager.logger.Printf("Order %v completed\n", order)
 				orderStateBroadcast(order, manager)
 			}
 		}

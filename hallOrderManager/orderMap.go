@@ -30,7 +30,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, f
 	return msg.HallOrder{}, false
 }
 
-func (om OrderMap) getOrderFromIDtoID(ownerID, delegatedID string) []msg.HallOrder {
+/*func (om OrderMap) getOrderFromIDtoID(ownerID, delegatedID string) []msg.HallOrder {
 	var orders []msg.HallOrder
 	_, ok := om[ownerID]
 	if ok {
@@ -41,7 +41,7 @@ func (om OrderMap) getOrderFromIDtoID(ownerID, delegatedID string) []msg.HallOrd
 		}
 	}
 	return orders
-}
+}*/
 
 func (om OrderMap) getOrderFromID(ownerID string) []msg.HallOrder {
 	var orders []msg.HallOrder

@@ -24,10 +24,10 @@ func OrderManager(
 		select {
 		case request := <-manager.localRequestChannel:
 			handleLocalRequest(request, &manager)
-		case orderComplete := <-manager.orderComplete:
-			//Get orders at the same floor from ordermap
-			//Send confirmation to network
-			fmt.Printf("Order %v completed\n", orderComplete)
+
+		case buttonEvent := <-manager.orderComplete:
+			completeOrder(buttonEvent, &manager)
+			fmt.Printf("Order %v completed\n", buttonEvent)
 
 		case reply := <-manager.replyToRequestFromNetwork:
 			handleReplyFromNetwork(reply, &manager)
@@ -131,6 +131,23 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 	manager.requestToNetwork <- orderToNet
 }
 
+func completeOrder(buttonEvent elevio.ButtonEvent, manager *HallOrderManager) {
+
+	dir := int(buttonEvent.Button)
+	floor := buttonEvent.Floor
+
+	setHallLight(dir, floor, false)
+
+	for _, node := range manager.orders {
+		for _, order := range node {
+			if order.Dir == dir && order.Floor == floor {
+				order.State = msg.Completed
+				orderStateBroadcast(order, manager)
+			}
+		}
+	}
+}
+
 func handleReplyFromNetwork(reply msg.OrderStamped, manager *HallOrderManager) {
 	order, valid := manager.orders.getOrder(manager.id, reply.OrderID)
 	if valid && order.State == msg.Received {
@@ -171,13 +188,24 @@ func acceptDelegatedHallOrder(delegation msg.OrderStamped, manager *HallOrderMan
 		OrderID: order.ID,
 		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 	manager.delegationConfirmToNetwork <- reply
+
+	setHallLight(order.Dir, order.Floor, true)
 }
 
 func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager) {
-	// Receive an order from the network and add it to the list of hall orders
 	if order.OwnerID != manager.id {
-		manager.orders.update(order)
 		manager.logger.Printf("Sync from net: %#v", order)
+
+		manager.orders.update(order)
+
+		if order.State == msg.Serving {
+			setHallLight(order.Dir, order.Floor, true)
+		}
+
+		if order.State == msg.Completed {
+			setHallLight(order.Dir, order.Floor, false)
+		}
+
 	}
 }
 
@@ -197,6 +225,8 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 			manager.logger.Printf("Delegate order ID%v to local elevator (%v replies): %#v", order.ID, len(order.Costs), order)
 			order.State = msg.Serving
 			orderStateBroadcast(order, manager)
+
+			setHallLight(order.Dir, order.Floor, true)
 		} else {
 			manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
 			//fmt.Printf("%v - delegate to %v  (%v replies) \n", orderID, id, len(order.Costs))
@@ -228,6 +258,8 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 
 		manager.orders.update(order)
 		orderStateBroadcast(order, manager)
+
+		setHallLight(order.Dir, order.Floor, true)
 	}
 }
 

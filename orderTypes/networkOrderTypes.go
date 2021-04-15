@@ -1,5 +1,7 @@
 package orderTypes
 
+import "../network/peers"
+
 type NetworkOrder struct {
 	SenderID   string
 	MessageID  int
@@ -26,4 +28,5 @@ type NetworkChannels struct {
 	DelegationConfirmFromNetwork chan OrderStamped
 	OrderCompleteFromNetwork     chan OrderStamped
 	SyncOrderFromNetwork         chan HallOrder
+	PeerUpdate                   chan peers.PeerUpdate
 }

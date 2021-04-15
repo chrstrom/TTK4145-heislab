@@ -21,7 +21,6 @@ type OrderStamped struct {
 	Order   Order
 }
 
-
 type HallOrder struct {
 	OwnerID       string
 	ID            int

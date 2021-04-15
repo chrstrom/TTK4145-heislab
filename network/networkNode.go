@@ -20,7 +20,7 @@ type Node struct {
 	networkChannels msg.NetworkChannels
 
 	// Network channels
-	peerUpdateChannel                                            chan peers.PeerUpdate
+	peerUpdateChannelRx                                          chan peers.PeerUpdate
 	peerTxEnable                                                 chan bool
 	newRequestChannelTx, newRequestChannelRx                     chan msg.NetworkOrder
 	newReplyToRequestChannelTx, newReplyToRequestChannelRx       chan msg.NetworkOrder
@@ -252,6 +252,10 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 
 			}
 
+		case peerUpdate := <-node.peerUpdateChannelRx:
+			node.networkChannels.PeerUpdate <- peerUpdate
+			node.loggerIncoming.Printf("Peer update: %#v", peerUpdate)
+
 		}
 	}
 }
@@ -265,10 +269,10 @@ func initializeNetworkNode(id string, channels msg.NetworkChannels) Node {
 	node.id = id
 	node.messageIDCounter = 1
 
-	node.peerUpdateChannel = make(chan peers.PeerUpdate)
+	node.peerUpdateChannelRx = make(chan peers.PeerUpdate)
 	node.peerTxEnable = make(chan bool)
 	go peers.Transmitter(25372, node.id, node.peerTxEnable)
-	go peers.Receiver(25372, node.peerUpdateChannel)
+	go peers.Receiver(25372, node.peerUpdateChannelRx)
 
 	node.newRequestChannelTx = make(chan msg.NetworkOrder)
 	node.newRequestChannelRx = make(chan msg.NetworkOrder)

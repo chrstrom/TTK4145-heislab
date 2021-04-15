@@ -8,8 +8,10 @@ import (
 
 	"../elevio"
 	"../localOrderDelegation"
+	"../network/peers"
 	msg "../orderTypes"
 	"../timer"
+	"../utility"
 )
 
 const N_FLOORS = 4
@@ -49,6 +51,12 @@ func OrderManager(
 		case orderID := <-manager.orderDelegationTimeoutChannel:
 			selfServeHallOrder(orderID, &manager)
 
+		case order := <-manager.orderCompleteTimeoutChannel:
+			handleOrderCompleteTimeout(order, &manager)
+
+		case peerUpdate := <-manager.peerUpdateChannel:
+			handlePeerUpdate(peerUpdate, &manager)
+
 			//case <-time.After(time.Second * 5):
 			//	manager.logger.Printf("Quiet for 5 seconds")
 		}
@@ -80,6 +88,7 @@ func initializeManager(
 	manager.orderSyncFromNetwork = channels.SyncOrderFromNetwork
 	manager.orderDelegationConfirmFromNetwork = channels.DelegationConfirmFromNetwork
 	manager.delegationFromNetwork = channels.DelegateFromNetwork
+	manager.peerUpdateChannel = channels.PeerUpdate
 
 	manager.delegateToLocalElevator = fsmChannels.DelegateHallOrder
 	manager.elevatorCost = fsmChannels.ReplyToHallOrderManager
@@ -88,6 +97,7 @@ func initializeManager(
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)
+	manager.orderCompleteTimeoutChannel = make(chan msg.HallOrder)
 
 	filepath := "log/" + manager.id + "-hallOrderManager.log"
 	file, _ := os.Create(filepath)
@@ -106,7 +116,6 @@ func initializeManager(
 func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOrderManager) {
 	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
 
-	// This order will get synced with every elevator on the network
 	order := msg.HallOrder{
 		OwnerID: manager.id,
 		ID:      manager.orderIDCounter,
@@ -121,16 +130,15 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 		OrderID: order.ID,
 		Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
 
-	//get local elevator cost in some way
 	manager.requestElevatorCost <- msg.RequestCost{Order: orderToFSM, RequestFrom: msg.HallOrderManager}
+
 	order.Costs[manager.id] = <-manager.elevatorCost
 	fmt.Printf("Cost:%v\n", order.Costs[manager.id])
-	//order.Costs[manager.id] = rand.Intn(1000)
 
 	manager.orders.update(order)
 
-	//fmt.Printf("%v - local request received \n", order.ID)
 	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
+	timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
 
 	orderToNet := msg.OrderStamped{
 		OrderID: order.ID,
@@ -203,6 +211,10 @@ func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager)
 	orderSaved, exists := manager.orders.getOrder(order.OwnerID, order.ID)
 
 	if !exists || (exists && order.State >= orderSaved.State) {
+
+		if !exists {
+			timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+		}
 		manager.logger.Printf("Sync from net: %#v", order)
 
 		manager.orders.update(order)
@@ -272,4 +284,63 @@ func selfServeHallOrder(orderID int, manager *HallOrderManager) {
 func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 	manager.orderSyncToNetwork <- order
 	manager.logger.Printf("Sync order ID%v to net:%#v", order.ID, order)
+}
+
+func handleOrderCompleteTimeout(order msg.HallOrder, manager *HallOrderManager) {
+	manager.logger.Printf("Order timeout ID%v: %#v", order.ID, order)
+	manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+	//redelegateOrder(order, manager)
+}
+
+func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
+	order, ok := manager.orders.getOrder(o.OwnerID, o.ID)
+	if ok && order.State != msg.Completed {
+		manager.logger.Printf("Redelegate order ID%v: %#v", order.ID, order)
+		if order.OwnerID != manager.id {
+			order.OwnerID = manager.id
+			order.ID = manager.orderIDCounter
+			manager.orderIDCounter++
+		}
+		order.Costs = make(map[string]int)
+		order.DelegatedToID = ""
+		order.State = msg.Received
+
+		manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+		order.Costs[manager.id] = <-manager.elevatorCost
+
+		manager.orders.update(order)
+
+		timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
+		timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+
+		orderToNet := msg.OrderStamped{
+			OrderID: order.ID,
+			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+
+		manager.requestToNetwork <- orderToNet
+	}
+}
+
+func handlePeerUpdate(peerUpdate peers.PeerUpdate, manager *HallOrderManager) {
+	for _, nodeid := range peerUpdate.Lost {
+		manager.logger.Printf("Node lost connection: %v", nodeid)
+		orders := manager.orders.getOrderToID(nodeid)
+		for _, o := range orders {
+			if o.OwnerID == manager.id {
+				redelegateOrder(o, manager)
+			} else if !utility.IsStringInSlice(o.OwnerID, peerUpdate.Peers) && !utility.IsStringInSlice(o.DelegatedToID, peerUpdate.Peers) {
+				redelegateOrder(o, manager)
+			}
+		}
+	}
+
+	if len(peerUpdate.New) > 0 {
+		manager.logger.Printf("New node(s) connected")
+		orders := manager.orders.getOrderFromID(manager.id)
+		for _, o := range orders {
+			if o.State == msg.Serving {
+				orderStateBroadcast(o, manager)
+			}
+		}
+	}
 }

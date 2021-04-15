@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"../network/localip"
+	"../network/peers"
 	types "../orderTypes"
 )
 
@@ -33,6 +34,7 @@ func CreateNetworkChannelStruct() types.NetworkChannels {
 	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.OrderCompleteFromNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.SyncOrderFromNetwork = make(chan types.HallOrder, 10)
+	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, 10)
 
 	return networkChannels
 }

@@ -58,6 +58,7 @@ func main() {
 	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
 
 	for {
+		time.Sleep(time.Second * 10)
 	}
 
 }

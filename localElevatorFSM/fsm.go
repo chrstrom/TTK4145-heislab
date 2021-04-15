@@ -1,6 +1,7 @@
 package fsm
 
 import (
+	"fmt"
 	"time"
 
 	"../cabOrderStorage"
@@ -208,11 +209,9 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			fmt.Printf("Caborder: %+v\n", cabOrder)
 			onRequestButtonPress(io.ButtonEvent{Floor: cabOrder, Button: io.BT_Cab}, fsmChannels.OrderComplete)
 
-
 		case hallOrder := <-fsmChannels.DelegateHallOrder:
 			fmt.Printf("Hallorder: %+v\n", hallOrder)
 			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete)
-
 
 		case costRequest := <-fsmChannels.RequestCost:
 			fmt.Printf("Cost requested\n")

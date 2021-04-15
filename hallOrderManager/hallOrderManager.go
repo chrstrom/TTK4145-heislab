@@ -305,7 +305,12 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 		order.DelegatedToID = ""
 		order.State = msg.Received
 
-		manager.requestElevatorCost <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+		orderToFSM := msg.OrderStamped{
+			OrderID: order.ID,
+			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+
+		manager.requestElevatorCost <- msg.RequestCost{Order: orderToFSM, RequestFrom: msg.HallOrderManager}
+
 		order.Costs[manager.id] = <-manager.elevatorCost
 
 		manager.orders.update(order)

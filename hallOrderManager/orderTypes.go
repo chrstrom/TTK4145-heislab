@@ -25,7 +25,7 @@ type HallOrderManager struct {
 	delegateToNetwork          chan<- msg.OrderStamped
 	orderSyncToNetwork         chan<- msg.HallOrder
 	delegateToLocalElevator    chan<- elevio.ButtonEvent
-	requestElevatorCost        chan<- elevio.ButtonEvent
+	requestElevatorCost        chan<- msg.RequestCost
 
 	replyToRequestFromNetwork         <-chan msg.OrderStamped
 	orderDelegationConfirmFromNetwork <-chan msg.OrderStamped

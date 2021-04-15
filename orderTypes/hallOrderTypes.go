@@ -6,6 +6,7 @@ const (
 	Received OrderStateType = iota
 	Delegate
 	Serving
+	Completed
 )
 
 type Order struct {

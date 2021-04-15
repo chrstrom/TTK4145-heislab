@@ -7,15 +7,14 @@ import (
 	"strings"
 
 	"../utility"
+	"../config"
 )
 
-const numFloors = 4 //use istead a global variable for number of floors
-const numButtons = 3
-const fileDuplicates = 3
+const numFloors = config.N_FLOORS
+const numButtons = config.N_BUTTONS
+const fileDuplicates = config.N_FILE_DUPLICATES
 
-const backupPath = "orderBackup/"
-
-//const backupPath = "/Users/svein/cabOrderStorage"
+const backupPath = config.BACKUP_FILE_PATH
 
 func StoreCabOrders(orders [numFloors][numButtons]bool) {
 	orderString := ""

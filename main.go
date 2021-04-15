@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"./config"
 	io "./elevio"
 	"./hallOrderManager"
 	fsm "./localElevatorFSM"
@@ -20,8 +21,7 @@ func main() {
 
 	//testOrderManager()
 
-	numFloors := 4
-	io.Init("localhost:"+*elevatorPort, numFloors)
+	io.Init("localhost:"+*elevatorPort, config.N_FLOORS)
 
 	// IO Channels //
 	drv_buttons := make(chan io.ButtonEvent)

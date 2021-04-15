@@ -25,12 +25,10 @@ func CreateNetworkChannelStruct() types.NetworkChannels {
 
 	networkChannels.RequestToNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.DelegateOrderToNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.ReplyToRequestToNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.DelegationConfirmToNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.OrderCompleteToNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.SyncOrderToNetwork = make(chan types.HallOrder, 10)
 
-	networkChannels.RequestFromNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.DelegateFromNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.ReplyToRequestFromNetwork = make(chan types.OrderStamped, 10)
 	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, 10)

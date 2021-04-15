@@ -4,9 +4,20 @@ import (
 	io "../elevio"
 )
 
+const (
+	HallOrderManager = 0
+	Network          = 1
+)
+
+type RequestCost struct {
+	Order       OrderStamped
+	RequestFrom int
+}
+
 type FSMChannels struct {
-	DelegateHallOrder chan io.ButtonEvent
-	Cost              chan int
-	RequestCost       chan io.ButtonEvent
-	OrderComplete     chan io.ButtonEvent
+	DelegateHallOrder       chan io.ButtonEvent
+	RequestCost             chan RequestCost
+	ReplyToNetWork          chan OrderStamped
+	ReplyToHallOrderManager chan int
+	OrderComplete           chan io.ButtonEvent
 }

@@ -30,6 +30,7 @@ func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, f
 	return msg.HallOrder{}, false
 }
 
+
 /*func (om OrderMap) getOrderFromIDtoID(ownerID, delegatedID string) []msg.HallOrder {
 	var orders []msg.HallOrder
 	_, ok := om[ownerID]
@@ -63,8 +64,22 @@ func (om OrderMap) getOrderToID(delegatedID string) []msg.HallOrder {
 			}
 		}
 	}
-	return orders
+  	return orders
 }
+
+func (om OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder {
+	
+	orders := make([]msg.HallOrder, 0)
+	
+	for _, node := range om {
+		for _, order := range node {
+			if order.Dir == dir && order.Floor == floor {
+				orders = append(orders, order)
+			}
+		}
+	}
+
+
 
 func (om OrderMap) printOrderMap() {
 	//fmt.Print("\033[H\033[2J") //Clear screen in Go console

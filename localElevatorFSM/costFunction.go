@@ -2,6 +2,7 @@ package fsm
 
 import (
 	io "../elevio"
+	"../config"
 )
 
 func timeToIdle(e Elevator, floor int, button int) int {
@@ -17,11 +18,11 @@ func timeToIdle(e Elevator, floor int, button int) int {
 		}
 		break
 	case Moving:
-		duration = TRAVEL_TIME / 2
+		duration = config.TRAVEL_TIME / 2
 		e.floor += int(e.direction)
 		break
 	case DoorOpen:
-		duration -= DOOR_OPEN_DURATION / 2
+		duration -= config.DOOR_OPEN_DURATION / 2
 	}
 
 	for {
@@ -30,11 +31,11 @@ func timeToIdle(e Elevator, floor int, button int) int {
 			if e.floor == floor {
 				return duration
 			}
-			duration += DOOR_OPEN_DURATION
+			duration += config.DOOR_OPEN_DURATION
 			e.direction = chooseDirection(e)
 
 		}
 		e.floor += int(e.direction)
-		duration += TRAVEL_TIME
+		duration += config.TRAVEL_TIME
 	}
 }

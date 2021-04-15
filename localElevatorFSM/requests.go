@@ -1,10 +1,13 @@
 package fsm
 
-import io "../elevio"
+import(
+	io "../elevio"
+	"../config"
+) 
 
 func requestsAbove(e Elevator) bool {
-	for floor := e.floor + 1; floor < N_FLOORS; floor++ {
-		for button := 0; button < N_BUTTONS; button++ {
+	for floor := e.floor + 1; floor < config.N_FLOORS; floor++ {
+		for button := 0; button < config.N_BUTTONS; button++ {
 			if e.requests[floor][button] {
 				return true
 			}
@@ -15,7 +18,7 @@ func requestsAbove(e Elevator) bool {
 
 func requestsBelow(e Elevator) bool {
 	for floor := 0; floor < e.floor; floor++ {
-		for button := 0; button < N_BUTTONS; button++ {
+		for button := 0; button < config.N_BUTTONS; button++ {
 			if e.requests[floor][button] {
 				return true
 			}
@@ -79,7 +82,7 @@ func shouldStop(e Elevator) bool {
 }
 
 func clearRequestAtFloor(e Elevator, orderCompleteCh chan<- io.ButtonEvent) Elevator {
-	for button := 0; button < N_BUTTONS; button++ {
+	for button := 0; button < config.N_BUTTONS; button++ {
 		if button != io.BT_Cab && e.requests[e.floor][button] {
 			orderCompleteCh <- io.ButtonEvent{Floor: e.floor, Button: io.ButtonType(button)}
 		}
@@ -89,15 +92,15 @@ func clearRequestAtFloor(e Elevator, orderCompleteCh chan<- io.ButtonEvent) Elev
 }
 
 func clearRequestAtFloorSimulation(e Elevator) Elevator {
-	for button := 0; button < N_BUTTONS; button++ {
+	for button := 0; button < config.N_BUTTONS; button++ {
 		e.requests[e.floor][button] = false
 	}
 	return e
 }
 
 func clearAllRequest(e Elevator) Elevator {
-	for floor := 0; floor < N_FLOORS; floor++ {
-		for button := 0; button < N_BUTTONS; button++ {
+	for floor := 0; floor < config.N_FLOORS; floor++ {
+		for button := 0; button < config.N_BUTTONS; button++ {
 			e.requests[floor][button] = false
 		}
 	}

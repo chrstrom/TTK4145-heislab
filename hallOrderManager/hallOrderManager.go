@@ -114,7 +114,11 @@ func initializeManager(
 }
 
 func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOrderManager) {
-	//Check if order already exits? Or is this better to do in localOrdermanager? Or allow duplicates
+	for _, o := range manager.orders.getOrdersToFloorWithDir(request.Floor, request.Dir) {
+		if o.State != msg.Completed {
+			return
+		}
+	}
 
 	order := msg.HallOrder{
 		OwnerID: manager.id,
@@ -157,7 +161,7 @@ func completeOrder(buttonEvent elevio.ButtonEvent, manager *HallOrderManager) {
 	for _, order := range manager.orders.getOrdersToFloorWithDir(floor, dir) {
 		order.State = msg.Completed
 		manager.orders.update(order)
-		manager.logger.Printf("Order %v completed\n", order)
+		manager.logger.Printf("Order completed ID%v: %#v\n", order.ID, order)
 		orderStateBroadcast(order, manager)
 	}
 
@@ -183,6 +187,8 @@ func handleConfirmationFromNetwork(confirm msg.OrderStamped, manager *HallOrderM
 		manager.logger.Printf("Confirmed ID%v: %#v", order.ID, order)
 		//Let the elevators on the network know that this local elevator has taken an order
 		orderStateBroadcast(order, manager)
+
+		setHallLight(order.Dir, order.Floor, true)
 	}
 }
 
@@ -287,9 +293,12 @@ func orderStateBroadcast(order msg.HallOrder, manager *HallOrderManager) {
 }
 
 func handleOrderCompleteTimeout(order msg.HallOrder, manager *HallOrderManager) {
-	manager.logger.Printf("Order timeout ID%v: %#v", order.ID, order)
-	manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
-	//redelegateOrder(order, manager)
+	orderSaved, exists := manager.orders.getOrder(order.OwnerID, order.ID)
+	if exists && orderSaved.State != msg.Completed {
+		manager.logger.Printf("Order timeout ID%v: %#v", order.ID, order)
+		manager.delegateToLocalElevator <- elevio.ButtonEvent{Floor: order.Floor, Button: elevio.ButtonType(order.Dir)}
+		//redelegateOrder(order, manager)
+	}
 }
 
 func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {

@@ -7,7 +7,7 @@ import (
 
 	"../network/localip"
 	"../network/peers"
-	types "../orderTypes"
+	msg "../orderTypes"
 	"../config"
 )
 
@@ -21,22 +21,22 @@ func GetNodeID() string {
 	return id
 }
 
-func CreateNetworkChannelStruct() types.NetworkChannels {
-	var networkChannels types.NetworkChannels
+func CreateNetworkChannelStruct() msg.NetworkChannels {
+	var networkChannels msg.NetworkChannels
 
 	const queueSize = config.NETWORK_CHANNEL_QUEUE_SIZE
 
-	networkChannels.RequestToNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.DelegateOrderToNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.DelegationConfirmToNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.OrderCompleteToNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.SyncOrderToNetwork = make(chan types.HallOrder, queueSize)
+	networkChannels.RequestToNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.DelegateOrderToNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.DelegationConfirmToNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.OrderCompleteToNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.SyncOrderToNetwork = make(chan msg.HallOrder, queueSize)
 
-	networkChannels.DelegateFromNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.ReplyToRequestFromNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.OrderCompleteFromNetwork = make(chan types.OrderStamped, queueSize)
-	networkChannels.SyncOrderFromNetwork = make(chan types.HallOrder, queueSize)
+	networkChannels.DelegateFromNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.ReplyToRequestFromNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.DelegationConfirmFromNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.OrderCompleteFromNetwork = make(chan msg.OrderStamped, queueSize)
+	networkChannels.SyncOrderFromNetwork = make(chan msg.HallOrder, queueSize)
 	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, queueSize)
 
 	return networkChannels

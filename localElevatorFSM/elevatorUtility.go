@@ -1,7 +1,7 @@
 package fsm
 
 import (
-	io "../elevio"
+	"../elevio"
 	"../config"
 	types "../orderTypes"
 )
@@ -9,25 +9,25 @@ import (
 func CreateFSMChannelStruct() types.FSMChannels {
 	var fsmChannels types.FSMChannels
 
-	fsmChannels.DelegateHallOrder = make(chan io.ButtonEvent)
+	fsmChannels.DelegateHallOrder = make(chan elevio.ButtonEvent)
 	fsmChannels.ReplyToHallOrderManager = make(chan int)
 	fsmChannels.ReplyToNetWork = make(chan types.OrderStamped, 10)
 	fsmChannels.RequestCost = make(chan types.RequestCost, 10)
-	fsmChannels.OrderComplete = make(chan io.ButtonEvent)
+	fsmChannels.OrderComplete = make(chan elevio.ButtonEvent)
 
 	return fsmChannels
 }
 
 
 func setCabLights() {
-	cab_button := io.ButtonType(2)
+	cab_button := elevio.ButtonType(2)
 
 	for f := 0; f < config.N_FLOORS; f++ {
 
 		if elevator.requests[f][cab_button] {
-			io.SetButtonLamp(cab_button, f, true)
+			elevio.SetButtonLamp(cab_button, f, true)
 		} else {
-			io.SetButtonLamp(cab_button, f, false)
+			elevio.SetButtonLamp(cab_button, f, false)
 		}
 
 	}
@@ -41,7 +41,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 
 	case Idle:
 		elevator.direction = chooseDirection(elevator)
-		if elevator.direction == io.MD_Stop {
+		if elevator.direction == elevio.MD_Stop {
 			return duration
 		}
 		break

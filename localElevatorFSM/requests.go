@@ -1,9 +1,9 @@
 package fsm
 
-import(
-	io "../elevio"
+import (
 	"../config"
-) 
+	"../elevio"
+)
 
 func requestsAbove(e Elevator) bool {
 	for floor := e.floor + 1; floor < config.N_FLOORS; floor++ {
@@ -27,35 +27,35 @@ func requestsBelow(e Elevator) bool {
 	return false
 }
 
-func chooseDirection(e Elevator) io.MotorDirection {
+func chooseDirection(e Elevator) elevio.MotorDirection {
 	switch e.direction {
 
 	// Note which functions are called first for each case!
 	// For MD_Stop it doesn't really matter which one goes first
-	case io.MD_Up:
+	case elevio.MD_Up:
 		if requestsAbove(e) {
-			return io.MD_Up
+			return elevio.MD_Up
 		} else if requestsBelow(e) {
-			return io.MD_Down
+			return elevio.MD_Down
 		} else {
-			return io.MD_Stop
+			return elevio.MD_Stop
 		}
 
-	case io.MD_Stop:
+	case elevio.MD_Stop:
 
 		fallthrough
 
-	case io.MD_Down:
+	case elevio.MD_Down:
 		if requestsBelow(e) {
-			return io.MD_Down
+			return elevio.MD_Down
 		} else if requestsAbove(e) {
-			return io.MD_Up
+			return elevio.MD_Up
 		} else {
-			return io.MD_Stop
+			return elevio.MD_Stop
 		}
 
 	}
-	return io.MD_Stop
+	return elevio.MD_Stop
 }
 
 func shouldStop(e Elevator) bool {
@@ -64,27 +64,27 @@ func shouldStop(e Elevator) bool {
 
 	switch e.direction {
 
-	case io.MD_Up:
-		return e.requests[floor][io.BT_HallUp] ||
-			e.requests[floor][io.BT_Cab] ||
+	case elevio.MD_Up:
+		return e.requests[floor][elevio.BT_HallUp] ||
+			e.requests[floor][elevio.BT_Cab] ||
 			!requestsAbove(e)
 
-	case io.MD_Down:
-		return e.requests[floor][io.BT_HallDown] ||
-			e.requests[floor][io.BT_Cab] ||
+	case elevio.MD_Down:
+		return e.requests[floor][elevio.BT_HallDown] ||
+			e.requests[floor][elevio.BT_Cab] ||
 			!requestsBelow(e)
 
-	case io.MD_Stop:
+	case elevio.MD_Stop:
 		fallthrough
 	default:
 		return true
 	}
 }
 
-func clearRequestAtFloor(e Elevator, orderCompleteCh chan<- io.ButtonEvent) Elevator {
+func clearRequestAtFloor(e Elevator, orderCompleteCh chan<- elevio.ButtonEvent) Elevator {
 	for button := 0; button < config.N_BUTTONS; button++ {
-		if button != io.BT_Cab && e.requests[e.floor][button] {
-			orderCompleteCh <- io.ButtonEvent{Floor: e.floor, Button: io.ButtonType(button)}
+		if button != elevio.BT_Cab && e.requests[e.floor][button] {
+			orderCompleteCh <- elevio.ButtonEvent{Floor: e.floor, Button: elevio.ButtonType(button)}
 		}
 		e.requests[e.floor][button] = false
 	}

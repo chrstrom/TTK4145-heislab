@@ -1,7 +1,7 @@
 package fsm
 
 import (
-	io "../elevio"
+	"../elevio"
 	"../config"
 )
 
@@ -16,7 +16,7 @@ const (
 
 type Elevator struct {
 	floor        int
-	direction    io.MotorDirection
+	direction    elevio.MotorDirection
 	requests     [config.N_FLOORS][config.N_BUTTONS]bool
 	state        ElevatorState
 	timerChannel chan int

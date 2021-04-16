@@ -51,7 +51,7 @@ func OrderManager(
 			order.Costs[manager.id] = <-manager.elevatorCost
 			manager.orders.update(order)
 
-			timer.SendWithDelay(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
+			timer.SendWithDelayInt(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
 			timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
 
 			orderToNet := msg.OrderStamped{
@@ -174,7 +174,7 @@ func OrderManager(
 
 				} else { // Order will be given to another elevator on the network
 					manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
-					timer.SendWithDelay(config.ORDER_DELEGATION_TIME, manager.orderDelegationTimeoutChannel, orderID)
+					timer.SendWithDelayInt(config.ORDER_DELEGATION_TIME, manager.orderDelegationTimeoutChannel, orderID)
 
 					order.State = msg.Delegate
 
@@ -332,7 +332,7 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 
 		manager.orders.update(order)
 
-		timer.SendWithDelay(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
+		timer.SendWithDelayInt(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
 		timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
 
 		orderToNet := msg.OrderStamped{

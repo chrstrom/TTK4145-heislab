@@ -25,7 +25,7 @@ func OrderManager(
 
 			for _, order := range manager.orders.getOrdersToFloorWithDir(request.Floor, request.Dir) {
 				if order.State != msg.Completed {
-					return
+					break
 				}
 			}
 

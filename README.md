@@ -46,6 +46,8 @@ Additionally, these packages have been added for QoL:
 These modules ultimately come together in main.go. To simplify execution when using the elevator simulator,
 we have provided .bat/.sh scripts under simulator/.
 
+A diagram showing simple interaction between the main modules is provided below.
+![Module diagram](./docs/moduledesign.jpg)
 The task
 ================
 

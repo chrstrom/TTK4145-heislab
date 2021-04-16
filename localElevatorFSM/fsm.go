@@ -10,7 +10,7 @@ import (
 	"../timer"
 )
 
-var elevator = makeUninitializedElevator()
+var elevator = initializeElevator()
 
 // This is the driver function of the elevator fsm node
 // and contains a for-select, thus should be called
@@ -22,12 +22,6 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
 	event_timer <-chan int) {
-
-	//Load cab ordes
-	cabOrders := cabOrderStorage.LoadCabOrders()
-	for f := 0; f < config.N_FLOORS; f++ {
-		elevator.requests[f][2] = cabOrders[f]
-	}
 
 	// Make sure to drive to a floor when initialized between floors
 	if elevator.floor == -1 {
@@ -100,6 +94,25 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		}
 
 	}
+}
+
+func initializeElevator() Elevator {
+	elevator := new(Elevator)
+	elevator.floor = -1
+	elevator.direction = io.MD_Stop
+	// 2D array of requests is 0 by default
+	elevator.state = Idle
+	elevator.timerChannel = make(chan int)
+	elevator.timerResets = 0
+	elevator.obstruction = false
+
+	//Load cab ordes
+	cabOrders := cabOrderStorage.LoadCabOrders()
+	for f := 0; f < config.N_FLOORS; f++ {
+		elevator.requests[f][2] = cabOrders[f]
+	}
+
+	return *elevator
 }
 
 // Cab orders and hall orders are handled the same way by the fsm,

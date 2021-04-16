@@ -19,19 +19,6 @@ func CreateFSMChannelStruct() types.FSMChannels {
 }
 
 
-func makeUninitializedElevator() Elevator {
-	elevator := new(Elevator)
-	elevator.floor = -1
-	elevator.direction = io.MD_Stop
-	// 2D array of requests is 0 by default
-	elevator.state = Idle
-	elevator.timerChannel = make(chan int)
-	elevator.timerResets = 0
-	elevator.obstruction = false
-
-	return *elevator
-}
-
 func setCabLights() {
 	cab_button := io.ButtonType(2)
 

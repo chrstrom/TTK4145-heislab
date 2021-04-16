@@ -1,8 +1,6 @@
 package orderTypes
 
-import (
-	io "../elevio"
-)
+import "../elevio"
 
 const (
 	HallOrderManager = 0
@@ -15,9 +13,9 @@ type RequestCost struct {
 }
 
 type FSMChannels struct {
-	DelegateHallOrder       chan io.ButtonEvent
+	DelegateHallOrder       chan elevio.ButtonEvent
 	RequestCost             chan RequestCost
 	ReplyToNetWork          chan OrderStamped
 	ReplyToHallOrderManager chan int
-	OrderComplete           chan io.ButtonEvent
+	OrderComplete           chan elevio.ButtonEvent
 }

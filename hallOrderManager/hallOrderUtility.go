@@ -1,10 +1,10 @@
 package hallOrderManager
 
 import (
-	io "../elevio"
+	"../elevio"
 )
 
-func getIDOfLowestCost(costs map[string]int) string {
+func getIDOfLowestCost(costs map[string]int, defaultID string) string {
 	lowest := 100000000
 	lowestID := ""
 
@@ -14,9 +14,14 @@ func getIDOfLowestCost(costs map[string]int) string {
 			lowestID = id
 		}
 	}
+
+	if lowestID == "" {
+		lowestID = defaultID
+	}
+
 	return lowestID
 }
 
 func setHallLight(dir int, floor int, state bool) {
-	io.SetButtonLamp(io.ButtonType(dir), floor, state)
+	elevio.SetButtonLamp(elevio.ButtonType(dir), floor, state)
 }

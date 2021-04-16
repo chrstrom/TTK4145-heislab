@@ -12,27 +12,9 @@ import (
 	"../config"
 )
 
-type Node struct {
-	id               string
-	messageIDCounter int
 
-	networkChannels msg.NetworkChannels
-
-	// Network channels
-	peerUpdateChannelRx                                          chan peers.PeerUpdate
-	peerTxEnable                                                 chan bool
-	newRequestChannelTx, newRequestChannelRx                     chan msg.NetworkOrder
-	newReplyToRequestChannelTx, newReplyToRequestChannelRx       chan msg.NetworkOrder
-	delegateOrderChannelTx, delegateOrderChannelRx               chan msg.NetworkOrder
-	delegateOrderConfirmChannelTx, delegateOrderConfirmChannelRx chan msg.NetworkOrder
-	orderCompleteChannelTx, orderCompleteChannelRx               chan msg.NetworkOrder
-	orderSyncChannelTx, orderSyncChannelRx                       chan msg.NetworkHallOrder
-
-	receivedMessages map[string][]int
-
-	loggerOutgoing, loggerIncoming *log.Logger
-}
-
+// This is the driver function for the network node
+// and contains a for-select, thus should be called as a goroutine.
 func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkChannels) {
 
 	node := initializeNetworkNode(id, channels)
@@ -80,7 +62,6 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				Order:      delegation}
 
 			node.messageIDCounter++
-			//fmt.Printf("Delegate to network: %#v \n", orderToBeDelegated)
 
 			node.loggerOutgoing.Printf("Delegation ID%v: %#v", orderToBeDelegated.Order.OrderID, orderToBeDelegated)
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
@@ -96,7 +77,6 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				Order:      confirm}
 
 			node.messageIDCounter++
-			//fmt.Printf("Sending Confirmation %#v \n", confirmationOfDelegation)
 
 			node.loggerOutgoing.Printf("Confirmation of delegation: %#v", confirmationOfDelegation)
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
@@ -143,14 +123,13 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					node.receivedMessages,
 					request.SenderID,
 					request.MessageID)
-				//fmt.Printf("%#v \n", request)
+
 				node.loggerIncoming.Printf("Request: %#v", request)
 				message := msg.OrderStamped{
 					ID:      request.SenderID,
 					OrderID: request.Order.OrderID,
 					Order:   request.Order.Order}
 
-				//node.networkChannels.RequestFromNetwork <- message
 				fsmChannels.RequestCost <- msg.RequestCost{Order: message, RequestFrom: msg.Network}
 			}
 
@@ -165,7 +144,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					node.receivedMessages,
 					replyToRequest.SenderID,
 					replyToRequest.MessageID)
-				//fmt.Printf("%#v \n", replyToRequest)
+
 				node.loggerIncoming.Printf("Reply to request ID%v: %#v", replyToRequest.Order.OrderID, replyToRequest)
 				message := msg.OrderStamped{
 					ID:      replyToRequest.SenderID,
@@ -186,7 +165,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					node.receivedMessages,
 					delegation.SenderID,
 					delegation.MessageID)
-				//fmt.Printf("Recieved delegation: %#v \n", delegation)
+
 				node.loggerIncoming.Printf("Delegation: %#v", delegation)
 				message := msg.OrderStamped{
 					ID:      delegation.SenderID,
@@ -207,7 +186,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					node.receivedMessages,
 					confirmation.SenderID,
 					confirmation.MessageID)
-				//fmt.Printf("Recieved confirmation: %#v \n", confirmation)
+
 				node.loggerIncoming.Printf("Confirmation of delegation ID%v: %#v", confirmation.Order.OrderID, confirmation)
 				message := msg.OrderStamped{
 					ID:      confirmation.SenderID,
@@ -229,9 +208,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					complete.SenderID,
 					complete.MessageID)
 
-				//fmt.Printf("%#v \n", complete)
 				node.loggerIncoming.Printf("Complete ID%v: %#v", complete.Order.OrderID, complete)
-				// Send message on channel
 			}
 
 		case sync := <-node.orderSyncChannelRx:

@@ -9,68 +9,55 @@ import (
 
 type OrderMap map[string]map[int]msg.HallOrder
 
-func (om OrderMap) update(order msg.HallOrder) {
-	_, ok := om[order.OwnerID]
+func (orderMap OrderMap) update(order msg.HallOrder) {
+	_, ok := orderMap[order.OwnerID]
 	if !ok {
-		om[order.OwnerID] = make(map[int]msg.HallOrder)
+		orderMap[order.OwnerID] = make(map[int]msg.HallOrder)
 	}
-	om[order.OwnerID][order.ID] = order
+	orderMap[order.OwnerID][order.ID] = order
 
-	om.printOrderMap()
+	orderMap.printOrderMap()
 }
 
-func (om OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
-	_, ok := om[ownerID]
+func (orderMap OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
+	_, ok := orderMap[ownerID]
 	if ok {
-		o, ok2 := om[ownerID][orderID]
+		order, ok2 := orderMap[ownerID][orderID]
 		if ok2 {
-			return o, true
+			return order, true
 		}
 	}
 	return msg.HallOrder{}, false
 }
 
-/*func (om OrderMap) getOrderFromIDtoID(ownerID, delegatedID string) []msg.HallOrder {
+func (orderMap OrderMap) getOrderFromID(ownerID string) []msg.HallOrder {
 	var orders []msg.HallOrder
-	_, ok := om[ownerID]
+	_, ok := orderMap[ownerID]
 	if ok {
-		for _, o := range om[ownerID] {
-			if o.DelegatedToID == delegatedID {
-				orders = append(orders, o)
-			}
-		}
-	}
-	return orders
-}*/
-
-func (om OrderMap) getOrderFromID(ownerID string) []msg.HallOrder {
-	var orders []msg.HallOrder
-	_, ok := om[ownerID]
-	if ok {
-		for _, o := range om[ownerID] {
-			orders = append(orders, o)
+		for _, order := range orderMap[ownerID] {
+			orders = append(orders, order)
 		}
 	}
 	return orders
 }
 
-func (om OrderMap) getOrderToID(delegatedID string) []msg.HallOrder {
+func (orderMap OrderMap) getOrderToID(delegatedID string) []msg.HallOrder {
 	var orders []msg.HallOrder
-	for _, node := range om {
-		for _, o := range node {
-			if o.DelegatedToID == delegatedID {
-				orders = append(orders, o)
+	for _, node := range orderMap {
+		for _, order := range node {
+			if order.DelegatedToID == delegatedID {
+				orders = append(orders, order)
 			}
 		}
 	}
 	return orders
 }
 
-func (om OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder {
+func (orderMap OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder {
 
 	orders := make([]msg.HallOrder, 0)
 
-	for _, node := range om {
+	for _, node := range orderMap {
 		for _, order := range node {
 			if order.Dir == dir && order.Floor == floor {
 				orders = append(orders, order)
@@ -80,11 +67,14 @@ func (om OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder {
 	return orders
 }
 
-func (om OrderMap) printOrderMap() {
+func (orderMap OrderMap) printOrderMap() {
 	//fmt.Print("\033[H\033[2J") //Clear screen in Go console
 	/*cmd := exec.Command("cmd", "/c", "cls") //Clear screen in windows cmd
 	cmd.Stdout = os.Stdout
 	cmd.Run()*/
+
+	// Please beware that this function is UGLY, but pretty printing usually is,
+	// so fuck it B)
 
 	fmt.Println("********************************OrderMap********************************")
 	orders := []struct {
@@ -92,7 +82,7 @@ func (om OrderMap) printOrderMap() {
 		orderid []int
 	}{}
 	i := 0
-	for id, omap := range om {
+	for id, omap := range orderMap {
 		orders = append(orders, struct {
 			nodeid  string
 			orderid []int
@@ -110,7 +100,7 @@ func (om OrderMap) printOrderMap() {
 		fmt.Println("Order id    State        Delegated to          Floor    Direction")
 
 		for _, oid := range node.orderid {
-			o := om[node.nodeid][oid]
+			o := orderMap[node.nodeid][oid]
 			state := ""
 			switch o.State {
 			case msg.Received:
@@ -128,28 +118,3 @@ func (om OrderMap) printOrderMap() {
 		fmt.Printf("\n\n")
 	}
 }
-
-/*
-func (om OrderMap) isValidOrder(order Order) bool {
-	_, ok := om[order.OwnerID]
-	if ok {
-		o, ok2 := om[order.OwnerID][order.ID]
-		if ok2 && o.ID == order.ID && o.Floor == order.Floor && o.Dir == order.Dir {
-			return true
-		}
-	}
-	return false
-}*/
-/*
-func TestOrderMap() {
-	om := make(OrderMap)
-	o := Order{ID: 123, State: Received, Floor: 2, Dir: 1, OwnerID: "node1"}
-	//o2 := Order{ID: 123, State: Received, Floor: 2, Dir: 1, OwnerID: "node1"}
-	om.update(o)
-	fmt.Println(om)
-	fmt.Println(om.getOrder("node1", 123))
-	o3, _ := om.getOrder("node1", 123)
-	o3.Floor = 20
-	om.update(o3)
-	fmt.Println(om)
-}*/

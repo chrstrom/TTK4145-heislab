@@ -11,7 +11,6 @@ import (
 )
 
 var elevator = makeUninitializedElevator()
-var cost = 0
 
 // This is the driver function of the elevator fsm node
 // and contains a for-select, thus should be called
@@ -54,7 +53,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		case costRequest := <-fsmChannels.RequestCost:
 
 			elevatorSimulator := elevator
-			cost = calculateCostForOrder(elevatorSimulator, costRequest.Order.Order.Floor, costRequest.Order.Order.Dir)
+			cost := calculateCostForOrder(elevatorSimulator, costRequest.Order.Order.Floor, costRequest.Order.Order.Dir)
 
 			if costRequest.RequestFrom == msg.Network {
 				reply := costRequest.Order

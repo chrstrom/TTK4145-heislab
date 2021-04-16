@@ -9,9 +9,8 @@ import (
 	"../network/bcast"
 	"../network/peers"
 	msg "../orderTypes"
+	"../config"
 )
-
-const duplicatesOfMessages = 3
 
 type Node struct {
 	id               string
@@ -52,7 +51,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			node.messageIDCounter++
 
 			node.loggerOutgoing.Printf("Request ID%v: %#v", newRequest.Order.OrderID, newRequest)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.newRequestChannelTx <- newRequest
 			}
 
@@ -68,7 +67,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Order.Cost)
 
 			node.loggerOutgoing.Printf("Reply to request: %#v", newReplyToRequest)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.newReplyToRequestChannelTx <- newReplyToRequest
 			}
 
@@ -84,7 +83,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			//fmt.Printf("Delegate to network: %#v \n", orderToBeDelegated)
 
 			node.loggerOutgoing.Printf("Delegation ID%v: %#v", orderToBeDelegated.Order.OrderID, orderToBeDelegated)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.delegateOrderChannelTx <- orderToBeDelegated
 			}
 
@@ -100,7 +99,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			//fmt.Printf("Sending Confirmation %#v \n", confirmationOfDelegation)
 
 			node.loggerOutgoing.Printf("Confirmation of delegation: %#v", confirmationOfDelegation)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.delegateOrderConfirmChannelTx <- confirmationOfDelegation
 			}
 
@@ -115,7 +114,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			node.messageIDCounter++
 
 			node.loggerOutgoing.Printf("Order completed ID%v: %#v", complete.OrderID, complete)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderCompleteChannelTx <- orderCompleted
 			}
 
@@ -128,7 +127,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 			node.messageIDCounter++
 
 			node.loggerOutgoing.Printf("Sync order ID%v: %#v", order.ID, order)
-			for i := 0; i < duplicatesOfMessages; i++ {
+			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderSyncChannelTx <- syncOrder
 			}
 

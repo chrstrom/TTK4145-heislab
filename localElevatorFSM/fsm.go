@@ -8,6 +8,7 @@ import (
 	io "../elevio"
 	types "../orderTypes"
 	"../timer"
+	"../config"
 )
 
 // Orders are received from the elevator server, so it makes
@@ -155,7 +156,7 @@ func onObstruction(obstruction bool) {
 func setCabLights() {
 	cab_button := io.ButtonType(2)
 
-	for f := 0; f < N_FLOORS; f++ {
+	for f := 0; f < config.N_FLOORS; f++ {
 
 		if elevator.requests[f][cab_button] {
 			io.SetButtonLamp(cab_button, f, true)
@@ -167,7 +168,7 @@ func setCabLights() {
 }
 
 func doorOpenTimer() {
-	const doorOpenTime = time.Second * DOOR_OPEN_DURATION
+	const doorOpenTime = time.Second * config.DOOR_OPEN_DURATION
 	io.SetDoorOpenLamp(true)
 	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
 }
@@ -185,7 +186,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 	//Load cab ordes
 	cabOrders := cabOrderStorage.LoadCabOrders()
-	for f := 0; f < N_FLOORS; f++ {
+	for f := 0; f < config.N_FLOORS; f++ {
 		elevator.requests[f][2] = cabOrders[f]
 	}
 	//fmt.Printf("CabOrders loaded!\n")

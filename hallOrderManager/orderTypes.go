@@ -2,7 +2,6 @@ package hallOrderManager
 
 import (
 	"log"
-	"time"
 
 	"../elevio"
 	"../localOrderDelegation"
@@ -10,11 +9,6 @@ import (
 	msg "../orderTypes"
 )
 
-const orderReplyTime = time.Millisecond * 300
-const orderDelegationTime = time.Millisecond * 500
-const orderCompletionTimeout = time.Second * 20
-
-//const orderCompletionTimeoutSelfServe = orderCompletionTimeout * 2
 
 type HallOrderManager struct {
 	id string

@@ -12,10 +12,8 @@ import (
 	msg "../orderTypes"
 	"../timer"
 	"../utility"
+	"../config"
 )
-
-const N_FLOORS = 4
-const N_BUTTONS = 3
 
 func OrderManager(
 	id string,
@@ -104,7 +102,7 @@ func initializeManager(
 	manager.logger = log.New(file, "", log.Ltime|log.Lmicroseconds)
 
 	// Turn off all hall lights on init
-	for f := 0; f < N_FLOORS; f++ {
+	for f := 0; f < config.N_FLOORS; f++ {
 		for b := elevio.ButtonType(0); b < 2; b++ {
 			elevio.SetButtonLamp(b, f, false)
 		}
@@ -141,8 +139,8 @@ func handleLocalRequest(request localOrderDelegation.LocalOrder, manager *HallOr
 
 	manager.orders.update(order)
 
-	timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
-	timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+	timer.SendWithDelay(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
+	timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
 
 	orderToNet := msg.OrderStamped{
 		OrderID: order.ID,
@@ -219,7 +217,7 @@ func synchronizeOrderFromNetwork(order msg.HallOrder, manager *HallOrderManager)
 	if !exists || (exists && order.State >= orderSaved.State) {
 
 		if !exists {
-			timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+			timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
 		}
 		manager.logger.Printf("Sync from net: %#v", order)
 
@@ -256,7 +254,7 @@ func delegateHallOrder(orderID int, manager *HallOrderManager) {
 			setHallLight(order.Dir, order.Floor, true)
 		} else {
 			manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
-			timer.SendWithDelay(orderDelegationTime, manager.orderDelegationTimeoutChannel, orderID)
+			timer.SendWithDelay(config.ORDER_DELEGATION_TIME, manager.orderDelegationTimeoutChannel, orderID)
 
 			order.State = msg.Delegate
 
@@ -324,8 +322,8 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 
 		manager.orders.update(order)
 
-		timer.SendWithDelay(orderReplyTime, manager.orderReplyTimeoutChannel, order.ID)
-		timer.SendWithDelayHallOrder(orderCompletionTimeout, manager.orderCompleteTimeoutChannel, order)
+		timer.SendWithDelay(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
+		timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
 
 		orderToNet := msg.OrderStamped{
 			OrderID: order.ID,

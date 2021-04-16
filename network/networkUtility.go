@@ -8,6 +8,7 @@ import (
 	"../network/localip"
 	"../network/peers"
 	types "../orderTypes"
+	"../config"
 )
 
 func GetNodeID() string {
@@ -23,18 +24,20 @@ func GetNodeID() string {
 func CreateNetworkChannelStruct() types.NetworkChannels {
 	var networkChannels types.NetworkChannels
 
-	networkChannels.RequestToNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.DelegateOrderToNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.DelegationConfirmToNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.OrderCompleteToNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.SyncOrderToNetwork = make(chan types.HallOrder, 10)
+	const queueSize = config.NETWORK_CHANNEL_QUEUE_SIZE
 
-	networkChannels.DelegateFromNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.ReplyToRequestFromNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.OrderCompleteFromNetwork = make(chan types.OrderStamped, 10)
-	networkChannels.SyncOrderFromNetwork = make(chan types.HallOrder, 10)
-	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, 10)
+	networkChannels.RequestToNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.DelegateOrderToNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.DelegationConfirmToNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.OrderCompleteToNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.SyncOrderToNetwork = make(chan types.HallOrder, queueSize)
+
+	networkChannels.DelegateFromNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.ReplyToRequestFromNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.DelegationConfirmFromNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.OrderCompleteFromNetwork = make(chan types.OrderStamped, queueSize)
+	networkChannels.SyncOrderFromNetwork = make(chan types.HallOrder, queueSize)
+	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, queueSize)
 
 	return networkChannels
 }

@@ -8,6 +8,6 @@ as .txt files.
 Backups are formatted as `bool bool ... bool`, where bool i represents if there is a cab order at floor i.
 When loading cab orders, a simple majority-wins voting system is used, should one file differ from the rest.
 
-Interface:
+### Interface
 * StoreCabOrders(orders [N_FLOORS][N_BUTTONS]bool)
 * LoadCabOrders() [N_FLOORS]bool

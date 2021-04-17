@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"./config"
-	io "./elevio"
+	"./elevio"
 	"./hallOrderManager"
 	fsm "./localElevatorFSM"
 	"./localOrderDelegation"
@@ -19,12 +19,10 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	//testOrderManager()
-
-	io.Init("localhost:"+*elevatorPort, config.N_FLOORS)
+	elevio.Init("localhost:"+*elevatorPort, config.N_FLOORS)
 
 	// IO Channels //
-	drv_buttons := make(chan io.ButtonEvent)
+	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
@@ -35,16 +33,12 @@ func main() {
 	cabOrderChannel := make(chan int)
 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
 	fsmChannels := fsm.CreateFSMChannelStruct()
-	//delegateHallOrderChannel := make(chan io.ButtonEvent)
-	//costChannel := make(chan int)
-	//requestCostChannel := make(chan io.ButtonEvent)
-	//orderCompleteChannel := make(chan io.ButtonEvent)
 
-	// IO //
-	go io.PollButtons(drv_buttons)
-	go io.PollFloorSensor(drv_floors)
-	go io.PollObstructionSwitch(drv_obstr)
-	go io.PollStopButton(drv_stop)
+	// Hardware //
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
 
 	// Network //
 	id := network.GetNodeID()
@@ -60,34 +54,3 @@ func main() {
 	}
 
 }
-
-// func testOrderManager() {
-// 	// Order Manager Channels //
-// 	networkChannels := network.CreateNetworkChannelStruct()
-// 	//cabOrderChannel := make(chan int)
-// 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-// 	fsmChannels := fsm.CreateFSMChannelStruct()
-// 	// delegateHallOrderChannel := make(chan io.ButtonEvent)
-// 	// costChannel := make(chan int)
-// 	// requestCostChannel := make(chan io.ButtonEvent)
-// 	// orderCompleteChannel := make(chan io.ButtonEvent)
-
-// 	// Network //
-// 	id := network.GetNodeID()
-// 	go network.NetworkNode(id, networkChannels)
-
-// 	// Elevator //
-// 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
-
-// 	// /** 	mock functions for testing 		**/
-// 	go mock.ReplyToRequests(networkChannels.RequestFromNetwork, networkChannels.ReplyToRequestToNetwork)
-// 	go mock.Receive(fsmChannels.DelegateHallOrder)
-// 	go mock.ElevatorCost(fsmChannels.RequestCost, fsmChannels.Cost)
-// 	//go mock.ReplyToDelegations(networkChannels.DelegateFromNetwork, networkChannels.DelegationConfirmToNetwork)
-
-// 	o := localOrderDelegation.LocalOrder{Floor: 2, Dir: 1}
-// 	for {
-// 		time.Sleep(time.Second * 5)
-// 		hallOrderChannel <- o
-// 	}
-// }

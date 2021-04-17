@@ -47,11 +47,11 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		case costRequest := <-fsmChannels.RequestCost:
 
 			elevatorSimulator := elevator
-			cost := calculateCostForOrder(elevatorSimulator, costRequest.Order.Order.Floor, costRequest.Order.Order.Dir)
+			cost := calculateCostForOrder(elevatorSimulator, costRequest.Order.Floor, costRequest.Order.Dir)
 
 			if costRequest.RequestFrom == msg.Network {
 				reply := costRequest.Order
-				reply.Order.Cost = cost
+				reply.Cost = cost
 				fsmChannels.ReplyToNetWork <- reply
 			} else {
 				fsmChannels.ReplyToHallOrderManager <- cost

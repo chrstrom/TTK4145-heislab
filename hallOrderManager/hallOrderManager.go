@@ -45,7 +45,8 @@ func OrderManager(
 			manager.requestElevatorCost <- msg.RequestCost{
 				Order: msg.OrderStamped{
 					OrderID: order.ID,
-					Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}},
+					Floor:   order.Floor,
+					Dir:     order.Dir},
 				RequestFrom: msg.HallOrderManager}
 
 			order.Costs[manager.id] = <-manager.elevatorCost
@@ -56,8 +57,8 @@ func OrderManager(
 
 			orderToNet := msg.OrderStamped{
 				OrderID: order.ID,
-				Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
-
+				Floor:   order.Floor,
+				Dir:     order.Dir}
 			manager.logger.Printf("New order ID%v: %#v", order.ID, order)
 			manager.requestToNetwork <- orderToNet
 
@@ -80,7 +81,7 @@ func OrderManager(
 			order, orderIsValid := manager.orders.getOrder(manager.id, reply.OrderID)
 
 			if orderIsValid && order.State == msg.Received {
-				order.Costs[reply.ID] = reply.Order.Cost
+				order.Costs[reply.ID] = reply.Cost
 				manager.orders.update(order)
 				manager.logger.Printf("New reply to order ID%v: %#v", order.ID, order)
 			}
@@ -105,22 +106,24 @@ func OrderManager(
 				ID:            delegation.OrderID,
 				DelegatedToID: manager.id,
 				State:         msg.Serving,
-				Floor:         delegation.Order.Floor,
-				Dir:           delegation.Order.Dir}
+				Floor:         delegation.Floor,
+				Dir:           delegation.Dir}
 
 			manager.orders.update(incomingOrder)
 			manager.logger.Printf("Received order from net: %#v", incomingOrder)
 
 			orderForFSM := elevio.ButtonEvent{
-				Floor:  delegation.Order.Floor,
-				Button: elevio.ButtonType(delegation.Order.Dir)}
+				Floor:  delegation.Floor,
+				Button: elevio.ButtonType(delegation.Dir)}
 
 			manager.delegateToLocalElevator <- orderForFSM
 
 			replyToNetwork := msg.OrderStamped{
 				ID:      incomingOrder.OwnerID,
 				OrderID: incomingOrder.ID,
-				Order:   msg.Order{Floor: incomingOrder.Floor, Dir: incomingOrder.Dir}}
+				Floor:   incomingOrder.Floor,
+				Dir:     incomingOrder.Dir}
+
 			manager.delegationConfirmToNetwork <- replyToNetwork
 
 			setHallLight(incomingOrder.Dir, incomingOrder.Floor, true)
@@ -181,7 +184,8 @@ func OrderManager(
 					delegatedOrder := msg.OrderStamped{
 						ID:      order.DelegatedToID,
 						OrderID: orderID,
-						Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+						Floor:   order.Floor,
+						Dir:     order.Dir}
 
 					manager.delegateToNetwork <- delegatedOrder
 				}
@@ -325,7 +329,8 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 		manager.requestElevatorCost <- msg.RequestCost{
 			Order: msg.OrderStamped{
 				OrderID: order.ID,
-				Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}},
+				Floor:   order.Floor,
+				Dir:     order.Dir},
 			RequestFrom: msg.HallOrderManager}
 
 		order.Costs[manager.id] = <-manager.elevatorCost
@@ -337,7 +342,8 @@ func redelegateOrder(o msg.HallOrder, manager *HallOrderManager) {
 
 		orderToNet := msg.OrderStamped{
 			OrderID: order.ID,
-			Order:   msg.Order{Floor: order.Floor, Dir: order.Dir}}
+			Floor:   order.Floor,
+			Dir:     order.Dir}
 
 		manager.requestToNetwork <- orderToNet
 	}

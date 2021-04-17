@@ -6,12 +6,11 @@ import (
 
 	"log"
 
+	"../config"
 	"../network/bcast"
 	"../network/peers"
 	msg "../orderTypes"
-	"../config"
 )
-
 
 // This is the driver function for the network node
 // and contains a for-select, thus should be called as a goroutine.
@@ -46,7 +45,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				Order:      reply}
 
 			node.messageIDCounter++
-			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Order.Cost)
+			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Cost)
 
 			node.loggerOutgoing.Printf("Reply to request: %#v", newReplyToRequest)
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
@@ -128,7 +127,9 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				message := msg.OrderStamped{
 					ID:      request.SenderID,
 					OrderID: request.Order.OrderID,
-					Order:   request.Order.Order}
+					Floor:   request.Order.Floor,
+					Dir:     request.Order.Dir,
+					Cost:    request.Order.Cost}
 
 				fsmChannels.RequestCost <- msg.RequestCost{Order: message, RequestFrom: msg.Network}
 			}
@@ -149,7 +150,9 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				message := msg.OrderStamped{
 					ID:      replyToRequest.SenderID,
 					OrderID: replyToRequest.Order.OrderID,
-					Order:   replyToRequest.Order.Order}
+					Floor:   replyToRequest.Order.Floor,
+					Dir:     replyToRequest.Order.Dir,
+					Cost:    replyToRequest.Order.Cost}
 
 				node.networkChannels.ReplyToRequestFromNetwork <- message
 			}
@@ -170,7 +173,9 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				message := msg.OrderStamped{
 					ID:      delegation.SenderID,
 					OrderID: delegation.Order.OrderID,
-					Order:   delegation.Order.Order}
+					Floor:   delegation.Order.Floor,
+					Dir:     delegation.Order.Dir,
+					Cost:    delegation.Order.Cost}
 
 				node.networkChannels.DelegateFromNetwork <- message
 			}
@@ -191,8 +196,9 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				message := msg.OrderStamped{
 					ID:      confirmation.SenderID,
 					OrderID: confirmation.Order.OrderID,
-					Order:   confirmation.Order.Order}
-
+					Floor:   confirmation.Order.Floor,
+					Dir:     confirmation.Order.Dir,
+					Cost:    confirmation.Order.Cost}
 				node.networkChannels.DelegationConfirmFromNetwork <- message
 			}
 

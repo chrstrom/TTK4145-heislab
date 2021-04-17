@@ -6,7 +6,7 @@ import (
 	"../cabOrderStorage"
 	"../config"
 	"../elevio"
-	msg "../orderTypes"
+	msg "../messageTypes"
 	"../timer"
 )
 

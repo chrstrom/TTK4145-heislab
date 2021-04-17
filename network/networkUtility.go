@@ -5,10 +5,10 @@ import (
 	"os"
 	"sort"
 
+	"../config"
+	msg "../messageTypes"
 	"../network/localip"
 	"../network/peers"
-	msg "../orderTypes"
-	"../config"
 )
 
 func GetNodeID() string {

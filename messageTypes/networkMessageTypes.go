@@ -1,4 +1,4 @@
-package orderTypes
+package messageTypes
 
 import "../network/peers"
 

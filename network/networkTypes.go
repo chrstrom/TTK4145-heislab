@@ -3,8 +3,8 @@ package network
 import (
 	"log"
 
+	msg "../messageTypes"
 	"../network/peers"
-	msg "../orderTypes"
 )
 
 type Node struct {

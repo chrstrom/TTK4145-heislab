@@ -1,4 +1,4 @@
-package orderTypes
+package messageTypes
 
 type OrderStateType int
 

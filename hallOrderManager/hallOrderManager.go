@@ -7,7 +7,7 @@ import (
 	"../config"
 	"../elevio"
 	"../localOrderDelegation"
-	msg "../orderTypes"
+	msg "../messageTypes"
 	"../timer"
 	"../utility"
 )

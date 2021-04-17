@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	msg "../orderTypes"
+	msg "../messageTypes"
 )
 
 type OrderMap map[string]map[int]msg.HallOrder

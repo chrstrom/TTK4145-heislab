@@ -9,7 +9,7 @@ import (
 	"../config"
 	"../network/bcast"
 	"../network/peers"
-	msg "../orderTypes"
+	msg "../messageTypes"
 )
 
 // This is the driver function for the network node

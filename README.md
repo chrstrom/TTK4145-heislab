@@ -1,5 +1,7 @@
 Our solution
 ================
+NOTE: Each module has its own README; read it if you want a quick insight into the module without
+having to dive into source code :^)
 
 Based on the requirements below, we have divided the program into the following modules:
 

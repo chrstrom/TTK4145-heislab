@@ -57,10 +57,9 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 		case confirm := <-node.networkChannels.DelegationConfirmToNetwork:
 
 			confirmationOfDelegation := networkOrderFromOrderStamped(confirm, node)
-
 			node.messageIDCounter++
-
 			node.loggerOutgoing.Printf("Confirmation of delegation: %#v", confirmationOfDelegation)
+
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.delegateOrderConfirmChannelTx <- confirmationOfDelegation
 			}
@@ -82,8 +81,8 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				MessageID: node.messageIDCounter,
 				Order:     order}
 			node.messageIDCounter++
-
 			node.loggerOutgoing.Printf("Sync order ID%v: %#v", order.ID, order)
+			
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderSyncChannelTx <- syncOrder
 			}

@@ -29,7 +29,7 @@ Based on the requirements below, we have divided the program into the following 
   * Loads cab orders from disk on startup.
 
 * timer
-  * Used for both the elevator door timer and for timeouts in the hall order manager.
+  * Used for the timeouts in the hall order manager.
   * Acts as an extension of the standard go timer, that allows for sending back custom data on timeout.
 
 Additionally, these packages have been added for QoL:

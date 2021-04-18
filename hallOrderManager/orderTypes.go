@@ -6,7 +6,7 @@ import (
 	"../elevio"
 	"../localOrderDelegation"
 	"../network/peers"
-	msg "../orderTypes"
+	msg "../messageTypes"
 )
 
 

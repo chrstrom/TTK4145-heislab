@@ -5,10 +5,10 @@ import (
 	"os"
 	"sort"
 
+	"../config"
+	msg "../messageTypes"
 	"../network/localip"
 	"../network/peers"
-	msg "../orderTypes"
-	"../config"
 )
 
 func GetNodeID() string {
@@ -40,6 +40,23 @@ func CreateNetworkChannelStruct() msg.NetworkChannels {
 	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, queueSize)
 
 	return networkChannels
+}
+
+func networkOrderFromOrderStamped(order msg.OrderStamped, node Node) msg.NetworkOrder {
+	return msg.NetworkOrder{
+		SenderID:   node.id,
+		MessageID:  node.messageIDCounter,
+		ReceiverID: order.ID,
+		Order:      order}
+}
+
+func orderStampedFromNetworkOrder(order msg.NetworkOrder) msg.OrderStamped {
+	return msg.OrderStamped{
+		ID:      order.SenderID,
+		OrderID: order.Order.OrderID,
+		Floor:   order.Order.Floor,
+		Dir:     order.Order.Dir,
+		Cost:    order.Order.Cost}
 }
 
 func shouldThisMessageBeProcessed(receivedMessages map[string][]int, senderID string, messageID int) bool {

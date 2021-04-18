@@ -1,4 +1,4 @@
-package orderTypes
+package messageTypes
 
 type OrderStateType int
 
@@ -9,16 +9,12 @@ const (
 	Completed
 )
 
-type Order struct {
-	Floor int
-	Dir   int
-	Cost  int
-}
-
 type OrderStamped struct {
 	ID      string
 	OrderID int
-	Order   Order
+	Floor int
+	Dir int
+	Cost int
 }
 
 type HallOrder struct {

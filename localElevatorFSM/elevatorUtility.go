@@ -3,7 +3,7 @@ package fsm
 import (
 	"../elevio"
 	"../config"
-	types "../orderTypes"
+	types "../messageTypes"
 )
 
 func CreateFSMChannelStruct() types.FSMChannels {

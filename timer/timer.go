@@ -3,7 +3,7 @@ package timer
 import (
 	"time"
 
-	msg "../orderTypes"
+	msg "../messageTypes"
 )
 
 func SendWithDelayInt(delay time.Duration, ch chan<- int, message int) {

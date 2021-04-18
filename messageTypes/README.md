@@ -1,4 +1,4 @@
-Order types
+Message types
 ================
 This package was introduced to avoid circular dependencies in the other packages,
 and contains types for the following modules:

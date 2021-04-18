@@ -7,7 +7,6 @@ import (
 	"../config"
 	"../elevio"
 	msg "../messageTypes"
-	"../timer"
 )
 
 var elevator = initializeElevator()
@@ -85,11 +84,8 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			}
 			onDoorTimeout()
 
-		case timer := <-elevator.timerChannel:
-			elevator.timerResets += timer
-			if elevator.timerResets == 0 {
-				onDoorTimeout()
-			}
+		case <-elevator.doorTimer.C:
+			onDoorTimeout()
 
 		}
 
@@ -101,9 +97,9 @@ func initializeElevator() Elevator {
 	elevator.floor = -1
 	elevator.direction = elevio.MD_Stop
 	// 2D array of requests is 0 by default
+	elevator.doorTimer = time.NewTimer(time.Second * config.DOOR_OPEN_DURATION)
+	elevator.doorTimer.Stop()
 	elevator.state = Idle
-	elevator.timerChannel = make(chan int)
-	elevator.timerResets = 0
 	elevator.obstruction = false
 
 	//Load cab ordes
@@ -167,5 +163,5 @@ func onDoorTimeout() {
 func doorOpenTimer() {
 	const doorOpenTime = time.Second * config.DOOR_OPEN_DURATION
 	elevio.SetDoorOpenLamp(true)
-	timer.FsmSendWithDelay(doorOpenTime, elevator.timerChannel)
+	elevator.doorTimer.Reset(doorOpenTime)
 }

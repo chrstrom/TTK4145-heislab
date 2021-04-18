@@ -7,9 +7,9 @@ import (
 	"log"
 
 	"../config"
+	msg "../messageTypes"
 	"../network/bcast"
 	"../network/peers"
-	msg "../messageTypes"
 )
 
 // This is the driver function for the network node
@@ -24,10 +24,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 		// Channels from the hall order manager to the network
 		case request := <-node.networkChannels.RequestToNetwork:
 
-			newRequest := msg.NetworkOrder{
-				SenderID:  node.id,
-				MessageID: node.messageIDCounter,
-				Order:     request}
+			newRequest := networkOrderFromOrderStamped(request, node)
 
 			node.messageIDCounter++
 
@@ -38,12 +35,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 
 		case reply := <-fsmChannels.ReplyToNetWork:
 
-			newReplyToRequest := msg.NetworkOrder{
-				SenderID:   node.id,
-				MessageID:  node.messageIDCounter,
-				ReceiverID: reply.ID,
-				Order:      reply}
-
+			newReplyToRequest := networkOrderFromOrderStamped(reply, node)
 			node.messageIDCounter++
 			fmt.Printf("Network recieved cost: %#v\n", newReplyToRequest.Order.Cost)
 
@@ -54,26 +46,17 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 
 		case delegation := <-node.networkChannels.DelegateOrderToNetwork:
 
-			orderToBeDelegated := msg.NetworkOrder{
-				SenderID:   node.id,
-				MessageID:  node.messageIDCounter,
-				ReceiverID: delegation.ID,
-				Order:      delegation}
-
+			orderToBeDelegated := networkOrderFromOrderStamped(delegation, node)
 			node.messageIDCounter++
-
 			node.loggerOutgoing.Printf("Delegation ID%v: %#v", orderToBeDelegated.Order.OrderID, orderToBeDelegated)
+
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.delegateOrderChannelTx <- orderToBeDelegated
 			}
 
 		case confirm := <-node.networkChannels.DelegationConfirmToNetwork:
 
-			confirmationOfDelegation := msg.NetworkOrder{
-				SenderID:   node.id,
-				MessageID:  node.messageIDCounter,
-				ReceiverID: confirm.ID,
-				Order:      confirm}
+			confirmationOfDelegation := networkOrderFromOrderStamped(confirm, node)
 
 			node.messageIDCounter++
 
@@ -84,15 +67,10 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 
 		case complete := <-node.networkChannels.OrderCompleteToNetwork:
 
-			orderCompleted := msg.NetworkOrder{
-				SenderID:   node.id,
-				MessageID:  node.messageIDCounter,
-				ReceiverID: complete.ID,
-				Order:      complete}
-
+			orderCompleted := networkOrderFromOrderStamped(complete, node)
 			node.messageIDCounter++
-
 			node.loggerOutgoing.Printf("Order completed ID%v: %#v", complete.OrderID, complete)
+
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderCompleteChannelTx <- orderCompleted
 			}
@@ -124,20 +102,13 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					request.MessageID)
 
 				node.loggerIncoming.Printf("Request: %#v", request)
-				message := msg.OrderStamped{
-					ID:      request.SenderID,
-					OrderID: request.Order.OrderID,
-					Floor:   request.Order.Floor,
-					Dir:     request.Order.Dir,
-					Cost:    request.Order.Cost}
-
+				message := orderStampedFromNetworkOrder(request)
 				fsmChannels.RequestCost <- msg.RequestCost{Order: message, RequestFrom: msg.Network}
 			}
 
 		case replyToRequest := <-node.newReplyToRequestChannelRx:
 			if replyToRequest.ReceiverID == node.id &&
-				shouldThisMessageBeProcessed(
-					node.receivedMessages,
+				shouldThisMessageBeProcessed(node.receivedMessages,
 					replyToRequest.SenderID,
 					replyToRequest.MessageID) {
 
@@ -147,13 +118,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					replyToRequest.MessageID)
 
 				node.loggerIncoming.Printf("Reply to request ID%v: %#v", replyToRequest.Order.OrderID, replyToRequest)
-				message := msg.OrderStamped{
-					ID:      replyToRequest.SenderID,
-					OrderID: replyToRequest.Order.OrderID,
-					Floor:   replyToRequest.Order.Floor,
-					Dir:     replyToRequest.Order.Dir,
-					Cost:    replyToRequest.Order.Cost}
-
+				message := orderStampedFromNetworkOrder(replyToRequest)
 				node.networkChannels.ReplyToRequestFromNetwork <- message
 			}
 
@@ -170,13 +135,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					delegation.MessageID)
 
 				node.loggerIncoming.Printf("Delegation: %#v", delegation)
-				message := msg.OrderStamped{
-					ID:      delegation.SenderID,
-					OrderID: delegation.Order.OrderID,
-					Floor:   delegation.Order.Floor,
-					Dir:     delegation.Order.Dir,
-					Cost:    delegation.Order.Cost}
-
+				message := orderStampedFromNetworkOrder(delegation)
 				node.networkChannels.DelegateFromNetwork <- message
 			}
 
@@ -193,12 +152,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 					confirmation.MessageID)
 
 				node.loggerIncoming.Printf("Confirmation of delegation ID%v: %#v", confirmation.Order.OrderID, confirmation)
-				message := msg.OrderStamped{
-					ID:      confirmation.SenderID,
-					OrderID: confirmation.Order.OrderID,
-					Floor:   confirmation.Order.Floor,
-					Dir:     confirmation.Order.Dir,
-					Cost:    confirmation.Order.Cost}
+				message := orderStampedFromNetworkOrder(confirmation)
 				node.networkChannels.DelegationConfirmFromNetwork <- message
 			}
 

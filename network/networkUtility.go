@@ -42,6 +42,23 @@ func CreateNetworkChannelStruct() msg.NetworkChannels {
 	return networkChannels
 }
 
+func networkOrderFromOrderStamped(order msg.OrderStamped, node Node) msg.NetworkOrder {
+	return msg.NetworkOrder{
+		SenderID:   node.id,
+		MessageID:  node.messageIDCounter,
+		ReceiverID: order.ID,
+		Order:      order}
+}
+
+func orderStampedFromNetworkOrder(order msg.NetworkOrder) msg.OrderStamped {
+	return msg.OrderStamped{
+		ID:      order.SenderID,
+		OrderID: order.Order.OrderID,
+		Floor:   order.Order.Floor,
+		Dir:     order.Order.Dir,
+		Cost:    order.Order.Cost}
+}
+
 func shouldThisMessageBeProcessed(receivedMessages map[string][]int, senderID string, messageID int) bool {
 	process := true
 	s, exists := receivedMessages[senderID]

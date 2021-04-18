@@ -1,10 +1,11 @@
 package fsm
 
 import (
-	"../elevio"
-	"../config"
-)
+	"time"
 
+	"../config"
+	"../elevio"
+)
 
 type ElevatorState int
 
@@ -15,11 +16,10 @@ const (
 )
 
 type Elevator struct {
-	floor        int
-	direction    elevio.MotorDirection
-	requests     [config.N_FLOORS][config.N_BUTTONS]bool
-	state        ElevatorState
-	timerChannel chan int
-	timerResets  int
-	obstruction  bool
+	floor       int
+	direction   elevio.MotorDirection
+	requests    [config.N_FLOORS][config.N_BUTTONS]bool
+	state       ElevatorState
+	doorTimer   *time.Timer
+	obstruction bool
 }

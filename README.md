@@ -1,4 +1,58 @@
-Elevator Project
+Our solution
+================
+NOTE: Each module has its own README; read it if you want a quick insight into the module without
+having to dive into source code :^)
+
+Based on the requirements below, we have divided the program into the following modules:
+
+* network
+  * Connects the hall order manager for each local elevator with every other elevator on the network
+  * P2P-based, and uses a hand-out UDP network package.
+
+* hallOrderManager
+  * Handles hall orders coming from the local elevator or the network.
+  * Local hall orders are delegated by the elevator that received it.
+  * Makes sure every elevator on the network have the same hall orders.
+  * Ensures no hall orders are lost by order timeouts and redelegation.
+
+* localOrderDelegation
+  * Our system considers cab and hall orders to be two very distinct types of orders.
+  * This module splits incoming button presses, cab orders go directly to the local elevator,
+  while hall orders go to the hall order manager.
+
+* fsm
+  * Controls the local elevator's behavior.
+
+* cabOrderStorage
+  * A module that ensures that no local cab orders are lost.
+  * Saves cab orders to disk.
+  * Loads cab orders from disk on startup.
+
+* timer
+  * Used for the timeouts in the hall order manager.
+  * Acts as an extension of the standard go timer, that allows for sending back custom data on timeout.
+
+Additionally, these packages have been added for QoL:
+
+* orderTypes
+  * Contains message definitions for the channels between the elevator fsm, hall order manager and network modules.
+  * Prevents circular dependencies in the hall order manager and network modules.
+
+* config
+  * A simple package with a config file (.go) that defines global constants.
+
+* utility
+  * Contains functions not directly related to the elevator system.
+
+
+These modules ultimately come together in main.go. To simplify execution when using the elevator simulator,
+we have provided .bat/.sh scripts under simulator/.
+
+A diagram showing simple interaction between the main modules is provided below.
+
+![Module diagram](./docs/moduledesign.jpg)
+
+The task
 ================
 
 

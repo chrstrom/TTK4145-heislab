@@ -19,7 +19,7 @@ func CreateFSMChannelStruct() types.FSMChannels {
 }
 
 
-func setCabLights() {
+func setCabLights(elevator *Elevator) {
 	cab_button := elevio.ButtonType(2)
 
 	for f := 0; f < config.N_FLOORS; f++ {
@@ -55,7 +55,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 
 	for {
 		if shouldStop(elevator) {
-			elevator = clearRequestAtFloorSimulation(elevator)
+			clearRequestAtFloorSimulation(&elevator)
 			if elevator.floor == floor {
 				return duration
 			}

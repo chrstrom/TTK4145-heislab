@@ -9,11 +9,6 @@ import (
 	msg "../messageTypes"
 )
 
-var elevator = initializeElevator()
-
-// This is the driver function of the elevator fsm node
-// and contains a for-select, thus should be called
-// as a goroutine.
 func RunElevatorFSM(event_cabOrder <-chan int,
 	fsmChannels msg.FSMChannels,
 	channels msg.NetworkChannels,
@@ -21,6 +16,8 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,
 	event_timer <-chan int) {
+
+	elevator := initializeElevator()
 
 	// Make sure to drive to a floor when initialized between floors
 	if elevator.floor == -1 {
@@ -36,12 +33,12 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 		case floor := <-event_cabOrder:
 			order := elevio.ButtonEvent{Floor: floor, Button: elevio.BT_Cab}
-			onRequestButtonPress(order, fsmChannels.OrderComplete)
-			setCabLights()
+			onRequestButtonPress(order, fsmChannels.OrderComplete, &elevator)
+			setCabLights(&elevator)
 
 		case hallOrder := <-fsmChannels.DelegateHallOrder:
-			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete)
-			setCabLights()
+			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete, &elevator)
+			setCabLights(&elevator)
 
 		case costRequest := <-fsmChannels.RequestCost:
 
@@ -66,10 +63,10 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 				if shouldStop(elevator) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
-					elevator = clearRequestAtFloor(elevator, fsmChannels.OrderComplete)
+					clearRequestAtFloor(&elevator, fsmChannels.OrderComplete)
 
-					doorOpenTimer()
-					setCabLights()
+					doorOpenTimer(&elevator)
+					setCabLights(&elevator)
 
 					elevator.state = DoorOpen
 				}
@@ -82,10 +79,10 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			if elevator.state == DoorOpen {
 				elevio.SetDoorOpenLamp(true)
 			}
-			onDoorTimeout()
+			onDoorTimeout(&elevator)
 
 		case <-elevator.doorTimer.C:
-			onDoorTimeout()
+			onDoorTimeout(&elevator)
 
 		}
 
@@ -113,7 +110,7 @@ func initializeElevator() Elevator {
 
 // Cab orders and hall orders are handled the same way by the fsm,
 // but are different concepts outside of it.
-func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- elevio.ButtonEvent) {
+func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- elevio.ButtonEvent, elevator *Elevator) {
 
 	floor := button_msg.Floor
 	button_type := button_msg.Button
@@ -123,8 +120,8 @@ func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- 
 	case DoorOpen:
 		elevator.requests[floor][button_type] = true
 		if elevator.floor == floor {
-			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
-			doorOpenTimer()
+			clearRequestAtFloor(elevator, orderCompleteCh)
+			doorOpenTimer(elevator)
 		}
 
 	case Moving:
@@ -133,23 +130,23 @@ func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- 
 	case Idle:
 		if elevator.floor == floor {
 			elevator.requests[floor][button_type] = true
-			elevator = clearRequestAtFloor(elevator, orderCompleteCh)
+			clearRequestAtFloor(elevator, orderCompleteCh)
 			elevio.SetDoorOpenLamp(true)
-			doorOpenTimer()
+			doorOpenTimer(elevator)
 			elevator.state = DoorOpen
 		} else {
 			elevator.requests[floor][button_type] = true
-			elevator.direction = chooseDirection(elevator)
+			elevator.direction = chooseDirection(*elevator)
 			elevio.SetMotorDirection(elevator.direction)
 			elevator.state = Moving
 		}
 	}
 }
 
-func onDoorTimeout() {
+func onDoorTimeout(elevator *Elevator) {
 	if elevator.state == DoorOpen && !elevator.obstruction {
 		elevio.SetDoorOpenLamp(false)
-		elevator.direction = chooseDirection(elevator)
+		elevator.direction = chooseDirection(*elevator)
 		elevio.SetMotorDirection(elevator.direction)
 
 		if elevator.direction == elevio.MD_Stop {
@@ -160,7 +157,7 @@ func onDoorTimeout() {
 	}
 }
 
-func doorOpenTimer() {
+func doorOpenTimer(elevator *Elevator) {
 	const doorOpenTime = time.Second * config.DOOR_OPEN_DURATION
 	elevio.SetDoorOpenLamp(true)
 	elevator.doorTimer.Reset(doorOpenTime)

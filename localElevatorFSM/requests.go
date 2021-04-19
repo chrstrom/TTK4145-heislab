@@ -81,28 +81,26 @@ func shouldStop(e Elevator) bool {
 	}
 }
 
-func clearRequestAtFloor(e Elevator, orderCompleteCh chan<- elevio.ButtonEvent) Elevator {
+func clearRequestAtFloor(elevator *Elevator, orderCompleteCh chan<- elevio.ButtonEvent){
 	for button := 0; button < config.N_BUTTONS; button++ {
-		if button != elevio.BT_Cab && e.requests[e.floor][button] {
-			orderCompleteCh <- elevio.ButtonEvent{Floor: e.floor, Button: elevio.ButtonType(button)}
+		if button != elevio.BT_Cab && elevator.requests[elevator.floor][button] {
+			orderCompleteCh <- elevio.ButtonEvent{Floor: elevator.floor, Button: elevio.ButtonType(button)}
 		}
-		e.requests[e.floor][button] = false
+		elevator.requests[elevator.floor][button] = false
 	}
-	return e
+
 }
 
-func clearRequestAtFloorSimulation(e Elevator) Elevator {
+func clearRequestAtFloorSimulation(elevator *Elevator) {
 	for button := 0; button < config.N_BUTTONS; button++ {
-		e.requests[e.floor][button] = false
+		elevator.requests[elevator.floor][button] = false
 	}
-	return e
 }
 
-func clearAllRequest(e Elevator) Elevator {
+func clearAllRequest(elevator *Elevator) {
 	for floor := 0; floor < config.N_FLOORS; floor++ {
 		for button := 0; button < config.N_BUTTONS; button++ {
-			e.requests[floor][button] = false
+			elevator.requests[floor][button] = false
 		}
 	}
-	return e
 }

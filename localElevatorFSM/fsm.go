@@ -1,4 +1,4 @@
-package elevatorFSM
+package localElevatorFSM
 
 import (
 	"time"

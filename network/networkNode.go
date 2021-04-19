@@ -21,7 +21,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 	for {
 		select {
 
-		// Channels from the hall order manager to the network
+		///////////////////////////// Channels from the hall order manager to the network /////////////////////////////
 		case request := <-node.networkChannels.RequestToNetwork:
 
 			newRequest := networkOrderFromOrderStamped(request, node)
@@ -82,12 +82,12 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				Order:     order}
 			node.messageIDCounter++
 			node.loggerOutgoing.Printf("Sync order ID%v: %#v", order.ID, order)
-			
+
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderSyncChannelTx <- syncOrder
 			}
 
-			// Channels from the network to the hall order manager
+		///////////////////////////// Channels from the network to the hall order manager /////////////////////////////
 		case request := <-node.newRequestChannelRx:
 			if request.SenderID != node.id &&
 				shouldThisMessageBeProcessed(

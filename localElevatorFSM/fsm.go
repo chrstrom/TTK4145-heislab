@@ -11,7 +11,6 @@ import (
 
 func RunElevatorFSM(event_cabOrder <-chan int,
 	fsmChannels msg.FSMChannels,
-	channels msg.NetworkChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
 	event_stopButton <-chan bool,

@@ -1,8 +1,8 @@
-package elevatorFSM
+package localElevatorFSM
 
 import (
-	"../elevio"
 	"../config"
+	"../elevio"
 	types "../messageTypes"
 )
 
@@ -17,7 +17,6 @@ func CreateFSMChannelStruct() types.FSMChannels {
 
 	return fsmChannels
 }
-
 
 func setCabLights(elevator *Elevator) {
 	cab_button := elevio.ButtonType(2)

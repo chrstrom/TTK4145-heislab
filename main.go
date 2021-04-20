@@ -26,13 +26,12 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
-	timer_ch := make(chan int)
 
 	// Order Manager Channels //
 	networkChannels := network.CreateNetworkChannelStruct()
 	cabOrderChannel := make(chan int)
 	hallOrderChannel := make(chan localOrderDelegation.LocalOrder)
-	fsmChannels := elevatorFSM.CreateFSMChannelStruct()
+	fsmChannels := localElevatorFSM.CreateFSMChannelStruct()
 
 	// Hardware //
 	go elevio.PollButtons(drv_buttons)
@@ -47,7 +46,7 @@ func main() {
 	// Elevator //
 	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
-	go elevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, networkChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
+	go localElevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, networkChannels, drv_floors, drv_obstr, drv_stop)
 
 	for {
 		time.Sleep(time.Second * 10)

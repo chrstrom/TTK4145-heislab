@@ -82,7 +82,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				Order:     order}
 			node.messageIDCounter++
 			node.loggerOutgoing.Printf("Sync order ID%v: %#v", order.ID, order)
-			
+
 			for i := 0; i < config.N_MESSAGE_DUPLICATES; i++ {
 				node.orderSyncChannelTx <- syncOrder
 			}

@@ -1,4 +1,4 @@
-package elevatorFSM
+package localElevatorFSM
 
 import (
 	"time"
@@ -7,6 +7,7 @@ import (
 	"../config"
 	"../elevio"
 	msg "../messageTypes"
+	"../timer"
 )
 
 func RunElevatorFSM(event_cabOrder <-chan int,
@@ -14,30 +15,25 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	channels msg.NetworkChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
-	event_stopButton <-chan bool,
-	event_timer <-chan int) {
+	event_stopButton <-chan bool) {
 
 	elevator := initializeElevator()
 
 	// Make sure to drive to a floor when initialized between floors
-	if elevator.floor == -1 {
-		elevator.direction = elevio.MD_Down
-		elevio.SetMotorDirection(elevator.direction)
-		elevator.state = Moving
-	}
 
 	for {
+
 		cabOrderStorage.StoreCabOrders(elevator.requests)
 
 		select {
 
-		case floor := <-event_cabOrder:
-			order := elevio.ButtonEvent{Floor: floor, Button: elevio.BT_Cab}
-			onRequestButtonPress(order, fsmChannels.OrderComplete, &elevator)
+		case cabOrder := <-event_cabOrder:
+			order := elevio.ButtonEvent{Floor: cabOrder, Button: elevio.BT_Cab}
+			onRequestButtonPress(order, fsmChannels.TimeoutChannel, fsmChannels.OrderComplete, &elevator)
 			setCabLights(&elevator)
 
 		case hallOrder := <-fsmChannels.DelegateHallOrder:
-			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete, &elevator)
+			onRequestButtonPress(hallOrder, fsmChannels.TimeoutChannel, fsmChannels.OrderComplete, &elevator)
 			setCabLights(&elevator)
 
 		case costRequest := <-fsmChannels.RequestCost:
@@ -54,6 +50,11 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			}
 
 		case newFloor := <-event_floorArrival:
+
+			if elevator.floor == -1 {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+			}
+
 			elevator.floor = newFloor
 
 			elevio.SetFloorIndicator(newFloor)
@@ -84,6 +85,16 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 		case <-elevator.doorTimer.C:
 			onDoorTimeout(&elevator)
 
+		case floor := <-fsmChannels.TimeoutChannel:
+			for button := 0; button < config.N_BUTTONS; button++ {
+				if elevator.requests[floor][button] {
+					timer.SendWithDelayInt(5*time.Second, fsmChannels.TimeoutChannel, floor)
+					elevator.direction = chooseDirection(elevator)
+					elevio.SetMotorDirection(elevator.direction)
+
+				}
+			}
+
 		}
 
 	}
@@ -105,15 +116,20 @@ func initializeElevator() Elevator {
 		elevator.requests[f][2] = cabOrders[f]
 	}
 
+	//Make sure the elevator is not initilalized between floors
+	elevator.direction = elevio.MD_Down
+	elevio.SetMotorDirection(elevator.direction)
+
 	return *elevator
 }
 
 // Cab orders and hall orders are handled the same way by the fsm,
 // but are different concepts outside of it.
-func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- elevio.ButtonEvent, elevator *Elevator) {
+func onRequestButtonPress(button_msg elevio.ButtonEvent, timeoutCh chan<- int, orderCompleteCh chan<- elevio.ButtonEvent, elevator *Elevator) {
 
 	floor := button_msg.Floor
 	button_type := button_msg.Button
+	timer.SendWithDelayInt(5*time.Second, timeoutCh, floor)
 
 	switch elevator.state {
 

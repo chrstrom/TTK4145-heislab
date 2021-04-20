@@ -1,4 +1,4 @@
-package elevatorFSM
+package localElevatorFSM
 
 import (
 	"../config"
@@ -81,7 +81,7 @@ func shouldStop(e Elevator) bool {
 	}
 }
 
-func clearRequestAtFloor(elevator *Elevator, orderCompleteCh chan<- elevio.ButtonEvent){
+func clearRequestAtFloor(elevator *Elevator, orderCompleteCh chan<- elevio.ButtonEvent) {
 	for button := 0; button < config.N_BUTTONS; button++ {
 		if button != elevio.BT_Cab && elevator.requests[elevator.floor][button] {
 			orderCompleteCh <- elevio.ButtonEvent{Floor: elevator.floor, Button: elevio.ButtonType(button)}

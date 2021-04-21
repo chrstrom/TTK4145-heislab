@@ -77,8 +77,6 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 			if elevator.state == DoorOpen {
 				elevio.SetDoorOpenLamp(true)
-				doorOpenTimer(&elevator)
-				<-elevator.doorTimer.C
 			}
 
 			onDoorTimeout(&elevator)
@@ -87,7 +85,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			onDoorTimeout(&elevator)
 
 		case floor := <-fsmChannels.TimeoutChannel:
-			if elevator.floor == floor {
+			if elevator.floor == floor && !elevator.obstruction {
 				timer.SendWithDelayInt(config.FSM_ORDER_TIMEOUT, fsmChannels.TimeoutChannel, elevator.floor)
 				elevator.direction = chooseDirection(elevator)
 				elevio.SetMotorDirection(elevator.direction)

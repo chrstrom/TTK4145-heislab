@@ -35,7 +35,7 @@ func setCabLights(elevator *Elevator) {
 }
 
 func calculateCostForOrder(elevator Elevator, floor int, button int) int {
-	var duration int = 0
+	var duration float32 = 0
 	elevator.requests[floor][button] = true
 
 	switch elevator.state {
@@ -45,7 +45,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 	case Idle:
 		elevator.direction = chooseDirection(elevator)
 		if elevator.direction == elevio.MD_Stop {
-			return duration
+			return int(duration)
 		}
 
 	case Moving:
@@ -60,7 +60,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 		if shouldStop(elevator) {
 			clearRequestAtFloorSimulation(&elevator)
 			if elevator.floor == floor {
-				return duration
+				return int(duration)
 			}
 			duration += config.DOOR_OPEN_DURATION
 			elevator.direction = chooseDirection(elevator)

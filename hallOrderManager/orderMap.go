@@ -67,7 +67,21 @@ func (orderMap OrderMap) getOrdersToFloorWithDir(floor, dir int) []msg.HallOrder
 	return orders
 }
 
-func (orderMap OrderMap) print() {
+func (orderMap OrderMap) anyActiveOrdersToFloor(floor, dir int) bool {
+	for _, orders := range orderMap.getOrdersToFloorWithDir(floor, dir) {
+		if orders.State != msg.Completed {
+			return true
+		}
+	}
+	return false
+}
+
+func (orderMap OrderMap) printOrderMap() {
+	//fmt.Print("\033[H\033[2J") //Clear screen in Go console
+	/*cmd := exec.Command("cmd", "/c", "cls") //Clear screen in windows cmd
+	cmd.Stdout = os.Stdout
+	cmd.Run()*/
+
 	// Please beware that this function is UGLY, but pretty printing usually is,
 	// so fuck it B)
 

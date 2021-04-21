@@ -21,7 +21,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 	for {
 		select {
 
-		// Channels from the hall order manager to the network
+		///////////////////////////// Channels from the hall order manager to the network /////////////////////////////
 		case request := <-node.networkChannels.RequestToNetwork:
 
 			newRequest := networkOrderFromOrderStamped(request, node)
@@ -87,7 +87,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				node.orderSyncChannelTx <- syncOrder
 			}
 
-			// Channels from the network to the hall order manager
+		///////////////////////////// Channels from the network to the hall order manager /////////////////////////////
 		case request := <-node.newRequestChannelRx:
 			if request.SenderID != node.id &&
 				shouldThisMessageBeProcessed(

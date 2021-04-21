@@ -26,41 +26,38 @@ func OrderManager(
 		select {
 		case request := <-manager.localRequestChannel:
 
-			for _, order := range manager.orders.getOrdersToFloorWithDir(request.Floor, request.Dir) {
-				if order.State != msg.Completed {
-					break
-				}
-			}
+			if !manager.orders.anyActiveOrdersToFloor(request.Floor, request.Dir) {
 
-			order := msg.HallOrder{
-				OwnerID: manager.id,
-				ID:      manager.orderIDCounter,
-				State:   msg.Received,
-				Floor:   request.Floor,
-				Dir:     request.Dir}
+				order := msg.HallOrder{
+					OwnerID: manager.id,
+					ID:      manager.orderIDCounter,
+					State:   msg.Received,
+					Floor:   request.Floor,
+					Dir:     request.Dir}
 
-			manager.orderIDCounter++
-			order.Costs = make(map[string]int)
+				manager.orderIDCounter++
+				order.Costs = make(map[string]int)
 
-			manager.requestElevatorCost <- msg.RequestCost{
-				Order: msg.OrderStamped{
+				manager.requestElevatorCost <- msg.RequestCost{
+					Order: msg.OrderStamped{
+						OrderID: order.ID,
+						Floor:   order.Floor,
+						Dir:     order.Dir},
+					RequestFrom: msg.HallOrderManager}
+
+				order.Costs[manager.id] = <-manager.elevatorCost
+				manager.orders.update(order)
+
+				timer.SendWithDelayInt(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
+				timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
+
+				orderToNet := msg.OrderStamped{
 					OrderID: order.ID,
 					Floor:   order.Floor,
-					Dir:     order.Dir},
-				RequestFrom: msg.HallOrderManager}
-
-			order.Costs[manager.id] = <-manager.elevatorCost
-			manager.orders.update(order)
-
-			timer.SendWithDelayInt(config.ORDER_REPLY_TIME, manager.orderReplyTimeoutChannel, order.ID)
-			timer.SendWithDelayHallOrder(config.ORDER_COMPLETION_TIMEOUT, manager.orderCompleteTimeoutChannel, order)
-
-			orderToNet := msg.OrderStamped{
-				OrderID: order.ID,
-				Floor:   order.Floor,
-				Dir:     order.Dir}
-			manager.logger.Printf("New order ID%v: %#v", order.ID, order)
-			manager.requestToNetwork <- orderToNet
+					Dir:     order.Dir}
+				manager.logger.Printf("New order ID%v: %#v", order.ID, order)
+				manager.requestToNetwork <- orderToNet
+			}
 
 		case buttonEvent := <-manager.orderComplete:
 

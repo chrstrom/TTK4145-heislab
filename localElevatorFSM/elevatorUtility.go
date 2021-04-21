@@ -8,12 +8,13 @@ import (
 
 func CreateFSMChannelStruct() types.FSMChannels {
 	var fsmChannels types.FSMChannels
+	const bufferSize = config.CHANNEL_BUFFER_SIZE
 
-	fsmChannels.DelegateHallOrder = make(chan elevio.ButtonEvent)
-	fsmChannels.ReplyToHallOrderManager = make(chan int)
-	fsmChannels.ReplyToNetWork = make(chan types.OrderStamped, 10)
-	fsmChannels.RequestCost = make(chan types.RequestCost, 10)
-	fsmChannels.OrderComplete = make(chan elevio.ButtonEvent)
+	fsmChannels.DelegateHallOrder = make(chan elevio.ButtonEvent, bufferSize)
+	fsmChannels.ReplyToHallOrderManager = make(chan int, bufferSize)
+	fsmChannels.ReplyToNetWork = make(chan types.OrderStamped, bufferSize)
+	fsmChannels.RequestCost = make(chan types.RequestCost, bufferSize)
+	fsmChannels.OrderComplete = make(chan elevio.ButtonEvent, bufferSize)
 
 	return fsmChannels
 }

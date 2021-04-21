@@ -16,7 +16,7 @@ func (orderMap OrderMap) update(order msg.HallOrder) {
 	}
 	orderMap[order.OwnerID][order.ID] = order
 
-	orderMap.printOrderMap()
+	orderMap.print()
 }
 
 func (orderMap OrderMap) getOrder(ownerID string, orderID int) (order msg.HallOrder, found bool) {
@@ -86,25 +86,30 @@ func (orderMap OrderMap) printOrderMap() {
 	// so fuck it B)
 
 	fmt.Println("********************************OrderMap********************************")
-	orders := []struct {
+
+	//Reformate the order map into one integer slice per node
+	nodes := []struct {
 		nodeid  string
 		orderid []int
 	}{}
 	i := 0
-	for id, omap := range orderMap {
-		orders = append(orders, struct {
+	for id, singleNodeOrders := range orderMap {
+		nodes = append(nodes, struct {
 			nodeid  string
 			orderid []int
 		}{id, []int{}})
-		for oid, _ := range omap {
-			orders[i].orderid = append(orders[i].orderid, oid)
+
+		for oid := range singleNodeOrders {
+			nodes[i].orderid = append(nodes[i].orderid, oid)
 		}
-		sort.Ints(orders[i].orderid)
+		sort.Ints(nodes[i].orderid)
 		i++
 	}
-	sort.Slice(orders, func(i, j int) bool { return orders[i].nodeid < orders[j].nodeid })
-	i = 0
-	for _, node := range orders {
+	//Sort nodes on id
+	sort.Slice(nodes, func(i, j int) bool { return nodes[i].nodeid < nodes[j].nodeid })
+
+	//Print orders from each node
+	for _, node := range nodes {
 		fmt.Printf("Node: %s \n", node.nodeid)
 		fmt.Println("Order id    State        Delegated to          Floor    Direction")
 
@@ -123,7 +128,6 @@ func (orderMap OrderMap) printOrderMap() {
 			}
 			fmt.Printf("%-11v %-12v %-21s %-8v %v \n", o.ID, state, o.DelegatedToID, o.Floor, o.Dir)
 		}
-		i++
 		fmt.Printf("\n\n")
 	}
 }

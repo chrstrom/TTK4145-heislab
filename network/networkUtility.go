@@ -24,20 +24,20 @@ func GetNodeID() string {
 func CreateNetworkChannelStruct() msg.NetworkChannels {
 	var networkChannels msg.NetworkChannels
 
-	const queueSize = config.NETWORK_CHANNEL_QUEUE_SIZE
+	const bufferSize = config.CHANNEL_BUFFER_SIZE
 
-	networkChannels.RequestToNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.DelegateOrderToNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.DelegationConfirmToNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.OrderCompleteToNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.SyncOrderToNetwork = make(chan msg.HallOrder, queueSize)
+	networkChannels.RequestToNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.DelegateOrderToNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.DelegationConfirmToNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.OrderCompleteToNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.SyncOrderToNetwork = make(chan msg.HallOrder, bufferSize)
 
-	networkChannels.DelegateFromNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.ReplyToRequestFromNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.DelegationConfirmFromNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.OrderCompleteFromNetwork = make(chan msg.OrderStamped, queueSize)
-	networkChannels.SyncOrderFromNetwork = make(chan msg.HallOrder, queueSize)
-	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, queueSize)
+	networkChannels.DelegateFromNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.ReplyToRequestFromNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.DelegationConfirmFromNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.OrderCompleteFromNetwork = make(chan msg.OrderStamped, bufferSize)
+	networkChannels.SyncOrderFromNetwork = make(chan msg.HallOrder, bufferSize)
+	networkChannels.PeerUpdate = make(chan peers.PeerUpdate, bufferSize)
 
 	return networkChannels
 }

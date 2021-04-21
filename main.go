@@ -48,6 +48,8 @@ func main() {
 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 	go localElevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, networkChannels, drv_floors, drv_obstr, drv_stop)
 
+
+
 	for {
 		time.Sleep(time.Second * 10)
 	}

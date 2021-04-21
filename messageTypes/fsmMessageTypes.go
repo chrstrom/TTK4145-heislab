@@ -18,5 +18,5 @@ type FSMChannels struct {
 	ReplyToNetWork          chan OrderStamped
 	ReplyToHallOrderManager chan int
 	OrderComplete           chan elevio.ButtonEvent
-	TimeoutChannel          chan int
+	ElevatorUnavailable     chan bool
 }

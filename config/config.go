@@ -7,6 +7,7 @@ const N_FLOORS = 4
 const N_BUTTONS = 3
 const DOOR_OPEN_DURATION = 2
 const TRAVEL_TIME = 1
+const MOTOR_STOP_DETECTION_TIME = time.Millisecond * 3000
 
 // For the cab order storage
 const N_FILE_DUPLICATES = 3

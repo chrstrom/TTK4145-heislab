@@ -215,6 +215,13 @@ func OrderManager(
 				selfServeHallOrder(order, &manager)
 			}
 
+		case <-manager.ElevatorUnavailable:
+			manager.logger.Printf("Local elevator unavailable, redelegating orders")
+			orders := manager.orders.getOrderToID(manager.id)
+			for _, order := range orders {
+				redelegateOrder(order, &manager)
+			}
+
 		case peerUpdate := <-manager.peerUpdateChannel:
 			for _, nodeid := range peerUpdate.Lost {
 
@@ -278,6 +285,7 @@ func initializeManager(
 	manager.elevatorCost = fsmChannels.ReplyToHallOrderManager
 	manager.requestElevatorCost = fsmChannels.RequestCost
 	manager.orderComplete = fsmChannels.OrderComplete
+	manager.ElevatorUnavailable = fsmChannels.ElevatorUnavailable
 
 	manager.orderReplyTimeoutChannel = make(chan int)
 	manager.orderDelegationTimeoutChannel = make(chan int)

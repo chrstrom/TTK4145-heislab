@@ -96,7 +96,12 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			onDoorTimeout(&elevator)
 
 		case <-elevator.doorTimer.C:
-			onDoorTimeout(&elevator)
+			if elevator.obstruction {
+				fsmChannels.ElevatorUnavailable <- true
+				clearAllHallRequests(&elevator)
+			} else {
+				onDoorTimeout(&elevator)
+			}
 
 		case <-elevator.motorStopTimer.C:
 			switch elevator.state {

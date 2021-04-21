@@ -21,4 +21,4 @@ const ORDER_COMPLETION_TIMEOUT = time.Second * 20
 const N_MESSAGE_DUPLICATES = 3
 
 //Channel buffer size
-const CHANNEL_BUFFER_SIZE = 10
+const FSM_CHANNEL_BUFFER_SIZE = 10

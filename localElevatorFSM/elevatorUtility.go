@@ -8,7 +8,7 @@ import (
 
 func CreateFSMChannelStruct() types.FSMChannels {
 	var fsmChannels types.FSMChannels
-	const bufferSize = config.CHANNEL_BUFFER_SIZE
+	const bufferSize = config.FSM_CHANNEL_BUFFER_SIZE
 
 	fsmChannels.DelegateHallOrder = make(chan elevio.ButtonEvent, bufferSize)
 	fsmChannels.ReplyToHallOrderManager = make(chan int, bufferSize)

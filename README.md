@@ -44,6 +44,13 @@ Additionally, these packages have been added for QoL:
 * utility
   * Contains functions not directly related to the elevator system.
 
+Lastly, this repo contains a few libraries that have not been written by us:
+* elevio
+  * Contains the functions for interfacing to hardware and the elevator simulator
+  * Given as a handout from the organizers of TTK4145
+* network/bcast, conn, localip, peers
+  * The underlying packages that allow for UDP communication.
+  * Also given as a handout.
 
 These modules ultimately come together in main.go. To simplify execution when using the elevator simulator,
 we have provided .bat/.sh scripts under simulator/.

@@ -67,12 +67,10 @@ func OrderManager(
 			setHallLight(dir, floor, false)
 
 			for _, order := range manager.orders.getOrdersToFloorWithDir(floor, dir) {
-				if order.State != msg.Completed {
-					order.State = msg.Completed
-					manager.orders.update(order)
-					manager.logger.Printf("Order completed ID%v: %#v\n", order.ID, order)
-					syncOrderWithOtherElevators(order, &manager)
-				}
+				order.State = msg.Completed
+				manager.orders.update(order)
+				manager.logger.Printf("Order completed ID%v: %#v\n", order.ID, order)
+				syncOrderWithOtherElevators(order, &manager)
 			}
 
 		case reply := <-manager.replyToRequestFromNetwork:
@@ -169,7 +167,7 @@ func OrderManager(
 					selfServeHallOrder(order, &manager)
 					order.State = msg.Serving
 
-					manager.logger.Printf("Delegating to local elevator order ID%v: %v", order.ID, order)
+					manager.logger.Printf("Timeout delegation ID%v, sending to local elevator: %v", order.ID, order)
 
 					syncOrderWithOtherElevators(order, &manager)
 					setHallLight(order.Dir, order.Floor, true)

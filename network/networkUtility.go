@@ -24,7 +24,7 @@ func GetNodeID() string {
 func CreateNetworkChannelStruct() msg.NetworkChannels {
 	var networkChannels msg.NetworkChannels
 
-	const bufferSize = config.CHANNEL_BUFFER_SIZE
+	const bufferSize = config.NETWORK_CHANNEL_BUFFER_SIZE
 
 	networkChannels.RequestToNetwork = make(chan msg.OrderStamped, bufferSize)
 	networkChannels.DelegateOrderToNetwork = make(chan msg.OrderStamped, bufferSize)

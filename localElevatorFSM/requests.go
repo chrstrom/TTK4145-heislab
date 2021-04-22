@@ -104,3 +104,10 @@ func clearAllRequest(elevator *Elevator) {
 		}
 	}
 }
+
+func clearAllHallRequests(elevator *Elevator) {
+	for floor := 0; floor < config.N_FLOORS; floor++ {
+		elevator.requests[floor][elevio.BT_HallDown] = false
+		elevator.requests[floor][elevio.BT_HallUp] = false
+	}
+}

@@ -76,12 +76,7 @@ func (orderMap OrderMap) anyActiveOrdersToFloor(floor, dir int) bool {
 	return false
 }
 
-func (orderMap OrderMap) printOrderMap() {
-	//fmt.Print("\033[H\033[2J") //Clear screen in Go console
-	/*cmd := exec.Command("cmd", "/c", "cls") //Clear screen in windows cmd
-	cmd.Stdout = os.Stdout
-	cmd.Run()*/
-
+func (orderMap OrderMap) print() {
 	// Please beware that this function is UGLY, but pretty printing usually is,
 	// so fuck it B)
 

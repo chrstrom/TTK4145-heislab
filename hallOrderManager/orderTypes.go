@@ -5,10 +5,9 @@ import (
 
 	"../elevio"
 	"../localOrderDelegation"
-	"../network/peers"
 	msg "../messageTypes"
+	"../network/peers"
 )
-
 
 type HallOrderManager struct {
 	id string
@@ -32,6 +31,7 @@ type HallOrderManager struct {
 	peerUpdateChannel                 <-chan peers.PeerUpdate
 	elevatorCost                      <-chan int
 	orderComplete                     <-chan elevio.ButtonEvent
+	ElevatorUnavailable               <-chan bool
 
 	orderReplyTimeoutChannel      chan int
 	orderDelegationTimeoutChannel chan int

@@ -13,25 +13,20 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 	fsmChannels msg.FSMChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
-	event_stopButton <-chan bool,
-	event_timer <-chan int) {
+	event_stopButton <-chan bool) {
 
 	elevator := initializeElevator()
 
 	// Make sure to drive to a floor when initialized between floors
-	if elevator.floor == -1 {
-		elevator.direction = elevio.MD_Down
-		elevio.SetMotorDirection(elevator.direction)
-		elevator.state = Moving
-	}
 
 	for {
+
 		cabOrderStorage.StoreCabOrders(elevator.requests)
 
 		select {
 
-		case floor := <-event_cabOrder:
-			order := elevio.ButtonEvent{Floor: floor, Button: elevio.BT_Cab}
+		case cabOrder := <-event_cabOrder:
+			order := elevio.ButtonEvent{Floor: cabOrder, Button: elevio.BT_Cab}
 			onRequestButtonPress(order, fsmChannels.OrderComplete, &elevator)
 			setCabLights(&elevator)
 
@@ -53,21 +48,40 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			}
 
 		case newFloor := <-event_floorArrival:
+
 			elevator.floor = newFloor
 
 			elevio.SetFloorIndicator(newFloor)
 			switch elevator.state {
 
 			case Moving:
-
 				if shouldStop(elevator) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					clearRequestAtFloor(&elevator, fsmChannels.OrderComplete)
+					elevator.motorStopTimer.Stop()
 
 					doorOpenTimer(&elevator)
 					setCabLights(&elevator)
 
 					elevator.state = DoorOpen
+				} else {
+					elevator.motorStopTimer.Reset(config.MOTOR_STOP_DETECTION_TIME)
+				}
+
+			case MotorStop:
+				elevator.motorStopTimer.Stop()
+
+				if shouldStop(elevator) {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					clearRequestAtFloor(&elevator, fsmChannels.OrderComplete)
+					elevator.motorStopTimer.Stop()
+
+					doorOpenTimer(&elevator)
+					setCabLights(&elevator)
+
+					elevator.state = DoorOpen
+				} else {
+					elevator.state = Moving
 				}
 
 			}
@@ -78,10 +92,28 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			if elevator.state == DoorOpen {
 				elevio.SetDoorOpenLamp(true)
 			}
+
 			onDoorTimeout(&elevator)
 
 		case <-elevator.doorTimer.C:
 			onDoorTimeout(&elevator)
+
+		case <-elevator.motorStopTimer.C:
+			switch elevator.state {
+			case Moving:
+				elevator.state = MotorStop
+				fsmChannels.ElevatorUnavailable <- true
+				clearAllHallRequests(&elevator)
+				if !requestsBelow(elevator) && !requestsAbove(elevator) {
+					elevator.requests[elevator.floor+int(elevator.direction)][elevio.BT_Cab] = true
+				}
+				elevator.motorStopTimer.Reset(time.Second)
+
+			case MotorStop:
+				elevator.direction = chooseDirection(elevator)
+				elevio.SetMotorDirection(elevator.direction)
+				elevator.motorStopTimer.Reset(time.Second)
+			}
 
 		}
 
@@ -95,6 +127,8 @@ func initializeElevator() Elevator {
 	// 2D array of requests is 0 by default
 	elevator.doorTimer = time.NewTimer(time.Second * config.DOOR_OPEN_DURATION)
 	elevator.doorTimer.Stop()
+	elevator.motorStopTimer = time.NewTimer(config.MOTOR_STOP_DETECTION_TIME)
+	elevator.motorStopTimer.Stop()
 	elevator.state = Idle
 	elevator.obstruction = false
 
@@ -103,6 +137,11 @@ func initializeElevator() Elevator {
 	for f := 0; f < config.N_FLOORS; f++ {
 		elevator.requests[f][2] = cabOrders[f]
 	}
+
+	//Make sure the elevator is not between floors
+	elevator.direction = elevio.MD_Down
+	elevio.SetMotorDirection(elevator.direction)
+	elevator.state = Moving
 
 	return *elevator
 }
@@ -126,6 +165,9 @@ func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- 
 	case Moving:
 		elevator.requests[floor][button_type] = true
 
+	case MotorStop:
+		elevator.requests[floor][button_type] = true
+
 	case Idle:
 		if elevator.floor == floor {
 			elevator.requests[floor][button_type] = true
@@ -138,6 +180,7 @@ func onRequestButtonPress(button_msg elevio.ButtonEvent, orderCompleteCh chan<- 
 			elevator.direction = chooseDirection(*elevator)
 			elevio.SetMotorDirection(elevator.direction)
 			elevator.state = Moving
+			elevator.motorStopTimer.Reset(config.MOTOR_STOP_DETECTION_TIME)
 		}
 	}
 }
@@ -152,6 +195,7 @@ func onDoorTimeout(elevator *Elevator) {
 			elevator.state = Idle
 		} else {
 			elevator.state = Moving
+			elevator.motorStopTimer.Reset(config.MOTOR_STOP_DETECTION_TIME)
 		}
 	}
 }

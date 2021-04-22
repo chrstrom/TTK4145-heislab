@@ -26,7 +26,6 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
-	timer_ch := make(chan int)
 
 	// Order Manager Channels //
 	networkChannels := network.CreateNetworkChannelStruct()
@@ -46,7 +45,7 @@ func main() {
 	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 
 	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
-	go localElevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop, timer_ch)
+	go localElevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop)
 
 	for {
 		time.Sleep(time.Second * 10)

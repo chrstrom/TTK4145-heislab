@@ -15,6 +15,7 @@ func CreateFSMChannelStruct() types.FSMChannels {
 	fsmChannels.ReplyToNetWork = make(chan types.OrderStamped, bufferSize)
 	fsmChannels.RequestCost = make(chan types.RequestCost, bufferSize)
 	fsmChannels.OrderComplete = make(chan elevio.ButtonEvent, bufferSize)
+	fsmChannels.ElevatorUnavailable = make(chan bool, bufferSize)
 
 	return fsmChannels
 }
@@ -34,21 +35,23 @@ func setCabLights(elevator *Elevator) {
 }
 
 func calculateCostForOrder(elevator Elevator, floor int, button int) int {
-	var duration int = 0
+	var duration float32 = 0
 	elevator.requests[floor][button] = true
 
 	switch elevator.state {
+	case MotorStop:
+		return 100000
 
 	case Idle:
 		elevator.direction = chooseDirection(elevator)
 		if elevator.direction == elevio.MD_Stop {
-			return duration
+			return int(duration)
 		}
-		break
+
 	case Moving:
 		duration = config.TRAVEL_TIME / 2
 		elevator.floor += int(elevator.direction)
-		break
+
 	case DoorOpen:
 		duration -= config.DOOR_OPEN_DURATION / 2
 	}
@@ -57,7 +60,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 		if shouldStop(elevator) {
 			clearRequestAtFloorSimulation(&elevator)
 			if elevator.floor == floor {
-				return duration
+				return int(duration)
 			}
 			duration += config.DOOR_OPEN_DURATION
 			elevator.direction = chooseDirection(elevator)

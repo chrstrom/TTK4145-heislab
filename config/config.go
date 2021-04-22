@@ -20,7 +20,7 @@ const ORDER_COMPLETION_TIMEOUT = time.Second * 20
 const FSM_ORDER_TIMEOUT = time.Second * 3
 
 // For the network module
-const N_MESSAGE_DUPLICATES = 3
+const N_MESSAGE_DUPLICATES = 10
 const NETWORK_CHANNEL_BUFFER_SIZE = 10
 
 // For the local elevator FSM

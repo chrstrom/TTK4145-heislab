@@ -56,7 +56,7 @@ func calculateCostForOrder(elevator Elevator, floor int, button int) int {
 		if elevator.obstruction {
 			return 100000
 		}
-		duration -= config.DOOR_OPEN_DURATION / 2
+		duration += config.DOOR_OPEN_DURATION / 2
 	}
 
 	for {

@@ -82,6 +82,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 					elevator.state = DoorOpen
 				} else {
 					elevator.state = Moving
+					elevator.motorStopTimer.Reset(config.MOTOR_STOP_DETECTION_TIME)
 				}
 
 			}

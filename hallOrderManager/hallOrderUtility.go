@@ -1,29 +1,25 @@
 package hallOrderManager
 
 import (
-	"sort"
-
 	"../elevio"
 )
 
 func getIDOfLowestCost(costs map[string]int, defaultID string) string {
 	lowest := 100000000
-	lowestIDs := []string{}
+	lowestID := ""
 
 	for id, c := range costs {
-		if c < lowest {
+		if c <= lowest {
 			lowest = c
-			lowestIDs = []string{id}
-		} else if c == lowest {
-			lowestIDs = append(lowestIDs, id)
+			lowestID = id
 		}
 	}
 
-	if len(lowestIDs) == 0 {
-		lowestIDs = []string{defaultID}
+	if lowestID == "" {
+		lowestID = defaultID
 	}
-	sort.Strings(lowestIDs)
-	return lowestIDs[0]
+
+	return lowestID
 }
 
 func setHallLight(dir int, floor int, state bool) {

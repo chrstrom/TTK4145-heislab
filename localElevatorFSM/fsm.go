@@ -9,7 +9,9 @@ import (
 	msg "../messageTypes"
 )
 
-func RunElevatorFSM(event_cabOrder <-chan int,
+// This is the driver function for the local elevator fsm
+// and contains a for-select, thus should be called as a goroutine.
+func RunElevatorFSM(cabOrder <-chan int,
 	fsmChannels msg.FSMChannels,
 	event_floorArrival <-chan int,
 	event_obstruction <-chan bool,
@@ -17,15 +19,14 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 	elevator := initializeElevator()
 
-	// Make sure to drive to a floor when initialized between floors
-
 	for {
 
 		cabOrderStorage.StoreCabOrders(elevator.requests)
 
 		select {
 
-		case cabOrder := <-event_cabOrder:
+		///////////////////////////// Order channels /////////////////////////////
+		case cabOrder := <-cabOrder:
 			order := elevio.ButtonEvent{Floor: cabOrder, Button: elevio.BT_Cab}
 			onRequestButtonPress(order, fsmChannels.OrderComplete, &elevator)
 			setCabLights(&elevator)
@@ -34,8 +35,8 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 			onRequestButtonPress(hallOrder, fsmChannels.OrderComplete, &elevator)
 			setCabLights(&elevator)
 
+		///////////////////////////// Cost channel /////////////////////////////
 		case costRequest := <-fsmChannels.RequestCost:
-
 			elevatorSimulator := elevator
 			cost := calculateCostForOrder(elevatorSimulator, costRequest.Order.Floor, costRequest.Order.Dir)
 
@@ -47,8 +48,8 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 				fsmChannels.ReplyToHallOrderManager <- cost
 			}
 
+		///////////////////////////// IO channels /////////////////////////////
 		case newFloor := <-event_floorArrival:
-
 			elevator.floor = newFloor
 
 			elevio.SetFloorIndicator(newFloor)
@@ -96,6 +97,7 @@ func RunElevatorFSM(event_cabOrder <-chan int,
 
 			onDoorTimeout(&elevator)
 
+		///////////////////////////// Timeout channels /////////////////////////////
 		case <-elevator.doorTimer.C:
 			if elevator.obstruction {
 				fsmChannels.ElevatorUnavailable <- true

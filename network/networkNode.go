@@ -87,7 +87,7 @@ func NetworkNode(id string, fsmChannels msg.FSMChannels, channels msg.NetworkCha
 				node.orderSyncChannelTx <- syncOrder
 			}
 
-		///////////////////////////// Channels from the network to the hall order manager /////////////////////////////
+		///////////////////////////// Channels from network to the network /////////////////////////////
 		case request := <-node.newRequestChannelRx:
 			if request.SenderID != node.id &&
 				shouldThisMessageBeProcessed(

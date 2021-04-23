@@ -39,11 +39,12 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	// Elevator // 
+	// Network //
 	id := network.GetNodeID()
 	go network.NetworkNode(id, fsmChannels, networkChannels)
-	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 
+	//Elevator//
+	go hallOrderManager.OrderManager(id, hallOrderChannel, fsmChannels, networkChannels)
 	go localOrderDelegation.OrderDelegator(drv_buttons, cabOrderChannel, hallOrderChannel)
 	go localElevatorFSM.RunElevatorFSM(cabOrderChannel, fsmChannels, drv_floors, drv_obstr, drv_stop)
 

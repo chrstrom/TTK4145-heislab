@@ -24,6 +24,8 @@ func OrderManager(
 
 	for {
 		select {
+
+		///////////////////////////// Channel from local order delegator to the hall order manager /////////////////////////////
 		case request := <-manager.localRequestChannel:
 
 			if !manager.orders.anyActiveOrdersToFloor(request.Floor, request.Dir) {
@@ -59,6 +61,7 @@ func OrderManager(
 				manager.requestToNetwork <- orderToNet
 			}
 
+		///////////////////////////// Channels from local elevator fsm to the hall order manager /////////////////////////////
 		case buttonEvent := <-manager.orderComplete:
 
 			dir := int(buttonEvent.Button)
@@ -75,6 +78,7 @@ func OrderManager(
 				}
 			}
 
+		///////////////////////////// Channel from network to the hall order manager /////////////////////////////
 		case reply := <-manager.replyToRequestFromNetwork:
 
 			order, orderIsValid := manager.orders.getOrder(manager.id, reply.OrderID)
@@ -154,10 +158,11 @@ func OrderManager(
 
 			}
 
+		///////////////////////////// Timeout channels /////////////////////////////
 		case orderID := <-manager.orderReplyTimeoutChannel:
+
 			// Once the window of time we listen to replies runs out,
 			// we can start delegating the hall order
-
 			order, orderIsValid := manager.orders.getOrder(manager.id, orderID)
 
 			if orderIsValid && order.State == msg.Received {
@@ -174,7 +179,8 @@ func OrderManager(
 					syncOrderWithOtherElevators(order, &manager)
 					setHallLight(order.Dir, order.Floor, true)
 
-				} else { // Order will be given to another elevator on the network
+				} else {
+					// Order will be given to another elevator on the network
 					manager.logger.Printf("Delegate order ID%v to net (%v replies): %#v", order.ID, len(order.Costs), order)
 					timer.SendWithDelayInt(config.ORDER_DELEGATION_TIME, manager.orderDelegationTimeoutChannel, orderID)
 
@@ -224,6 +230,7 @@ func OrderManager(
 				redelegateOrder(order, &manager)
 			}
 
+		///////////////////////////// Peer update channel /////////////////////////////
 		case peerUpdate := <-manager.peerUpdateChannel:
 			for _, nodeid := range peerUpdate.Lost {
 

@@ -77,8 +77,7 @@ func (orderMap OrderMap) anyActiveOrdersToFloor(floor, dir int) bool {
 }
 
 func (orderMap OrderMap) print() {
-	// Please beware that this function is UGLY, but pretty printing usually is,
-	// so fuck it B)
+	// Please beware that this function is UGLY, but pretty printing usually is
 
 	fmt.Println("********************************OrderMap********************************")
 
